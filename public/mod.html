@@ -30,7 +30,7 @@ body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100
 .page{display:none}.page.active{display:block;animation:fu 0.3s ease}
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .page-header{margin-bottom:28px}
-.page-title{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px}
+.page-title{font-size:26px;font-weight:800;margin-bottom:4px}
 .page-title span{background:linear-gradient(90deg,#3b82f6,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .page-sub{color:#6b7280;font-size:14px}
 .card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:24px;margin-bottom:20px}
@@ -130,133 +130,92 @@ tbody tr:hover td{background:rgba(59,130,246,0.04)}
 <div class="modal-bg" id="banModal"><div class="modal-box"><h2>🔨 Zbanuj gracza</h2><input type="hidden" id="banName"><div class="form-label">Powód</div><input class="input" id="banReason" placeholder="Powód..." style="margin-bottom:14px"><div class="form-label">Czas</div><select class="input" id="banDur"><option value="1h">1 Godzina</option><option value="24h">24 Godziny</option><option value="7d">7 Dni</option><option value="30d">30 Dni</option><option value="perm">Permanentny</option></select><div class="modal-footer"><button class="btn btn-ghost" id="banNo">Anuluj</button><button class="btn btn-danger" id="banYes">🔨 Zbanuj</button></div></div></div>
 
 <script>
-// Sprawdz czy zalogowany jako mod
 var adminName = sessionStorage.getItem('adminName');
 var adminRole = sessionStorage.getItem('adminRole');
-if (!adminName || adminRole !== 'mod') {
-    window.location.href = '/';
-}
+if (!adminName || adminRole !== 'mod') { window.location.href = '/'; }
 document.getElementById('nameBadge').textContent = '👤 ' + adminName;
 
 var socket = io();
+function api(m,u,d){var o={method:m,headers:{'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);return fetch(u,o).then(function(r){return r.json();})}
+function durText(d){return{perm:'Permanentny','1h':'1 Godzina','24h':'24 Godziny','7d':'7 Dni','30d':'30 Dni'}[d]||d}
 
-function api(m, u, d) {
-    var o = {method:m, headers:{'Content-Type':'application/json'}};
-    if (d) o.body = JSON.stringify(d);
-    return fetch(u, o).then(function(r){ return r.json(); });
-}
-
-// NAWIGACJA
 document.querySelectorAll('.sidebar-item').forEach(function(item){
-    item.addEventListener('click', function(){
-        var page = this.getAttribute('data-page');
-        document.querySelectorAll('.sidebar-item').forEach(function(x){ x.classList.remove('active'); });
-        document.querySelectorAll('.page').forEach(function(x){ x.classList.remove('active'); });
+    item.addEventListener('click',function(){
+        var page=this.getAttribute('data-page');
+        document.querySelectorAll('.sidebar-item').forEach(function(x){x.classList.remove('active')});
+        document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
         this.classList.add('active');
         document.getElementById('page-'+page).classList.add('active');
-        if(page==='bans') loadBans();
-        if(page==='players') loadP();
+        if(page==='bans')loadBans();
+        if(page==='players')loadP();
     });
 });
 
-// GRACZE
-function loadP() {
+function loadP(){
     api('GET','/api/players').then(function(list){
-        var tb = document.getElementById('pBody');
-        var no = document.getElementById('noP');
-        document.getElementById('pCount').textContent = list.length;
-        document.getElementById('playerNotif').textContent = list.length;
-        if (!list.length) { tb.innerHTML=''; no.style.display='block'; return; }
+        var tb=document.getElementById('pBody'),no=document.getElementById('noP');
+        document.getElementById('pCount').textContent=list.length;
+        document.getElementById('playerNotif').textContent=list.length;
+        if(!list.length){tb.innerHTML='';no.style.display='block';return}
         no.style.display='none';
         var h='';
         list.forEach(function(p){
-            var hc = p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
-            h += '<tr><td><span class="player-name">'+p.name+'</span></td>';
-            h += '<td><span class="player-id">'+p.id+'</span></td>';
-            h += '<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
-            h += '<td><span class="pos-badge">'+p.position+'</span></td>';
-            h += '<td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
-            h += '<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢 Kick</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨 Ban</button></div></td></tr>';
+            var hc=p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
+            h+='<tr><td><span class="player-name">'+p.name+'</span></td><td><span class="player-id">'+p.id+'</span></td>';
+            h+='<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
+            h+='<td><span class="pos-badge">'+p.position+'</span></td><td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
+            h+='<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢 Kick</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨 Ban</button></div></td></tr>';
         });
-        tb.innerHTML = h;
-        document.querySelectorAll('.kb').forEach(function(b){
-            b.addEventListener('click', function(){
-                document.getElementById('kickName').value = this.getAttribute('data-n');
-                document.getElementById('kickReason').value = '';
-                document.getElementById('kickModal').classList.add('show');
-            });
-        });
-        document.querySelectorAll('.bb').forEach(function(b){
-            b.addEventListener('click', function(){
-                document.getElementById('banName').value = this.getAttribute('data-n');
-                document.getElementById('banReason').value = '';
-                document.getElementById('banModal').classList.add('show');
-            });
-        });
+        tb.innerHTML=h;
+        document.querySelectorAll('.kb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('kickName').value=this.getAttribute('data-n');document.getElementById('kickReason').value='';document.getElementById('kickModal').classList.add('show')})});
+        document.querySelectorAll('.bb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('banName').value=this.getAttribute('data-n');document.getElementById('banReason').value='';document.getElementById('banModal').classList.add('show')})});
     });
 }
 
-// BANY
-function durText(d){ return {perm:'Permanentny','1h':'1 Godzina','24h':'24 Godziny','7d':'7 Dni','30d':'30 Dni'}[d]||d; }
-function loadBans() {
+function loadBans(){
     api('GET','/api/bans').then(function(bans){
-        var c = document.getElementById('banList');
-        if (!bans.length) { c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>'; return; }
+        var c=document.getElementById('banList');
+        if(!bans.length){c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>';return}
         var h='';
         bans.forEach(function(b){
-            h += '<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
-            h += '<div class="ban-info">Powód: '+b.reason+' • '+durText(b.duration)+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
-            h += '</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
+            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
+            h+='<div class="ban-info">Powód: '+b.reason+' • '+durText(b.duration)+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
+            h+='</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
         });
-        c.innerHTML = h;
-        document.querySelectorAll('.ub').forEach(function(b){
-            b.addEventListener('click', function(){
-                api('POST','/api/players/unban',{name:this.getAttribute('data-n'),admin:adminName}).then(function(){ loadBans(); });
-            });
-        });
+        c.innerHTML=h;
+        document.querySelectorAll('.ub').forEach(function(b){b.addEventListener('click',function(){api('POST','/api/players/unban',{name:this.getAttribute('data-n'),admin:adminName}).then(function(){loadBans()})})});
     });
 }
 
-// RĘCZNY BAN
-document.getElementById('manualBanBtn').addEventListener('click', function(){
-    var name = document.getElementById('manualName').value.trim();
-    var reason = document.getElementById('manualReason').value.trim() || 'Brak powodu';
-    var dur = document.getElementById('manualDur').value;
-    if (!name) { alert('Wpisz nick!'); return; }
+document.getElementById('manualBanBtn').addEventListener('click',function(){
+    var name=document.getElementById('manualName').value.trim();
+    var reason=document.getElementById('manualReason').value.trim()||'Brak powodu';
+    var dur=document.getElementById('manualDur').value;
+    if(!name){alert('Wpisz nick gracza!');return}
     api('POST','/api/players/ban',{name:name,reason:reason,duration:dur,admin:adminName}).then(function(){
         document.getElementById('manualName').value='';
         document.getElementById('manualReason').value='';
-        loadBans(); loadP();
+        loadBans();loadP();
     });
 });
 
-// MODALE
-document.getElementById('kickYes').addEventListener('click', function(){
+document.getElementById('kickYes').addEventListener('click',function(){
     api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value||'Brak powodu',admin:adminName}).then(function(){
-        document.getElementById('kickModal').classList.remove('show');
-        loadP();
+        document.getElementById('kickModal').classList.remove('show');loadP();
     });
 });
-document.getElementById('kickNo').addEventListener('click', function(){ document.getElementById('kickModal').classList.remove('show'); });
+document.getElementById('kickNo').addEventListener('click',function(){document.getElementById('kickModal').classList.remove('show')});
 
-document.getElementById('banYes').addEventListener('click', function(){
+document.getElementById('banYes').addEventListener('click',function(){
     api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value||'Brak powodu',duration:document.getElementById('banDur').value,admin:adminName}).then(function(){
-        document.getElementById('banModal').classList.remove('show');
-        loadP(); loadBans();
+        document.getElementById('banModal').classList.remove('show');loadP();loadBans();
     });
 });
-document.getElementById('banNo').addEventListener('click', function(){ document.getElementById('banModal').classList.remove('show'); });
+document.getElementById('banNo').addEventListener('click',function(){document.getElementById('banModal').classList.remove('show')});
 
-// SOCKET
-socket.on('playerList', function(){ loadP(); });
+socket.on('playerList',function(){loadP()});
 
-// WYLOGUJ
-document.getElementById('logoutBtn').addEventListener('click', function(){
-    sessionStorage.clear();
-    window.location.href='/';
-});
-
-// START
+document.getElementById('logoutBtn').addEventListener('click',function(){sessionStorage.clear();window.location.href='/'});
 loadP();
 </script>
 </body>
