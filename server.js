@@ -6,7 +6,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// ============================================
+// WKLEJ TUTAJ SWOJ WEBHOOK URL Z DISCORDA!
+// ============================================
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1494374094857306313/tXlKfOg1skeQX3yaLSeOGBHJs6FQS-II_tFbRptcBnsoN1PsB8gtf3RWRrnv28P2WTz8";
+// ============================================
 
 var ADMINS = [
     { login: 'VsXe', password: 'admin123' },
@@ -23,6 +29,90 @@ var logs = [];
 var bannedPlayers = [];
 var commandQueue = [];
 
+// ============================================
+// DISCORD — TYLKO BANY
+// ============================================
+function sendDiscordBan(data) {
+    var https = require('https');
+    var url = require('url');
+    var now = new Date().toLocaleString('pl-PL');
+
+    var embed = {
+        title: "🔨 Gracz Zbanowany",
+        color: 15158332,
+        fields: [
+            {
+                name: "👤 Zbanowany gracz",
+                value: "```" + data.name + "```",
+                inline: true
+            },
+            {
+                name: "👮 Przez admina",
+                value: "```" + (data.admin || 'Panel') + "```",
+                inline: true
+            },
+            {
+                name: "\u200b",
+                value: "\u200b",
+                inline: false
+            },
+            {
+                name: "📋 Powód bana",
+                value: "```" + (data.reason || 'Brak powodu') + "```",
+                inline: false
+            },
+            {
+                name: "⏱️ Czas trwania",
+                value: "```" + (data.duration || 'Permanentny') + "```",
+                inline: true
+            },
+            {
+                name: "🕐 Data i godzina",
+                value: "```" + now + "```",
+                inline: true
+            }
+        ],
+        footer: {
+            text: "Łomża Roleplay • System Banów"
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    var payload = JSON.stringify({
+        username: "Łomża Roleplay",
+        embeds: [embed]
+    });
+
+    try {
+        var parsedUrl = url.parse(DISCORD_WEBHOOK);
+        var options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.path,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+
+        var req = https.request(options, function(res) {
+            console.log('[Discord] Ban wyslany! Status: ' + res.statusCode);
+        });
+
+        req.on('error', function(e) {
+            console.error('[Discord] Blad: ' + e.message);
+        });
+
+        req.write(payload);
+        req.end();
+    } catch(e) {
+        console.error('[Discord] Blad: ' + e.message);
+    }
+}
+
+// ============================================
+// LOGI
+// ============================================
 function addLog(type, message) {
     var log = { id: Date.now(), type: type, message: message, time: new Date().toLocaleString('pl-PL') };
     logs.unshift(log);
@@ -31,7 +121,10 @@ function addLog(type, message) {
     return log;
 }
 
-// === LOGIN ===
+// ============================================
+// API
+// ============================================
+
 app.post('/api/login', function(req, res) {
     var login = req.body.login;
     var password = req.body.password;
@@ -49,7 +142,6 @@ app.post('/api/login', function(req, res) {
     return res.json({ success: false });
 });
 
-// === STATUS ===
 app.get('/api/status', function(req, res) {
     res.json({
         name: serverStatus.name,
@@ -68,7 +160,6 @@ app.post('/api/server/toggle', function(req, res) {
     res.json({ success: true, isOnline: serverStatus.isOnline });
 });
 
-// === PLAYERS ===
 app.get('/api/players', function(req, res) { res.json(players); });
 
 app.post('/api/players/kick', function(req, res) {
@@ -85,10 +176,15 @@ app.post('/api/players/ban', function(req, res) {
     var name = req.body.name;
     var reason = req.body.reason || 'Brak powodu';
     var duration = req.body.duration || 'perm';
+    var admin = req.body.admin || 'Panel';
     players = players.filter(function(p) { return p.name !== name; });
     bannedPlayers.push({ name: name, reason: reason, duration: duration, time: new Date().toLocaleString('pl-PL') });
     commandQueue.push({ type: 'ban', target: name, reason: reason, duration: duration, time: Date.now() });
     addLog('ban', '🔨 ' + name + ' ZBANOWANY! Powod: ' + reason);
+
+    // Wyslij TYLKO ban na Discorda
+    sendDiscordBan({ name: name, reason: reason, duration: duration, admin: admin });
+
     io.emit('playerList', players);
     res.json({ success: true });
 });
@@ -102,7 +198,6 @@ app.post('/api/players/unban', function(req, res) {
 
 app.get('/api/bans', function(req, res) { res.json(bannedPlayers); });
 
-// === ANNOUNCE ===
 app.post('/api/announce', function(req, res) {
     var message = req.body.message;
     commandQueue.push({ type: 'announce', message: message, time: Date.now() });
@@ -111,7 +206,6 @@ app.post('/api/announce', function(req, res) {
     res.json({ success: true });
 });
 
-// === COMMAND ===
 app.post('/api/command', function(req, res) {
     var command = req.body.command;
     commandQueue.push({ type: 'command', command: command, time: Date.now() });
@@ -119,15 +213,14 @@ app.post('/api/command', function(req, res) {
     res.json({ success: true });
 });
 
-// === LOGS ===
 app.get('/api/logs', function(req, res) { res.json(logs); });
+
 app.post('/api/logs/clear', function(req, res) {
     logs = [];
     addLog('info', '🗑️ Logi wyczyszczone');
     res.json({ success: true });
 });
 
-// === SETTINGS ===
 app.post('/api/server/settings', function(req, res) {
     if (req.body.name) serverStatus.name = req.body.name;
     if (req.body.maxPlayers) serverStatus.maxPlayers = req.body.maxPlayers;
@@ -135,7 +228,6 @@ app.post('/api/server/settings', function(req, res) {
     res.json({ success: true });
 });
 
-// === TEST PLAYERS ===
 app.post('/api/test/addplayers', function(req, res) {
     var names = ['ProGamer', 'NoobSlayer', 'BuilderKing', 'SpeedRunner', 'PolskiGracz', 'CoolPlayer', 'RobloxFan', 'DarkKnight'];
     var positions = ['Spawn', 'Sklep', 'Komisariat', 'Szpital', 'Ratusz', 'Garaz', 'Centrum'];
@@ -153,15 +245,13 @@ app.post('/api/test/addplayers', function(req, res) {
 });
 
 // ============================================
-// === ROBLOX API — TO LACZY GRE Z PANELEM ===
+// ROBLOX API
 // ============================================
 
-// Roblox: gracz dolacza
 app.post('/api/roblox/join', function(req, res) {
     var name = req.body.name || 'Unknown';
     var userId = req.body.userId || '0';
 
-    // Sprawdz czy zbanowany
     var isBanned = false;
     for (var i = 0; i < bannedPlayers.length; i++) {
         if (bannedPlayers[i].name === name) {
@@ -188,7 +278,6 @@ app.post('/api/roblox/join', function(req, res) {
     res.json({ success: true, banned: false });
 });
 
-// Roblox: gracz wychodzi
 app.post('/api/roblox/leave', function(req, res) {
     var name = req.body.name;
     players = players.filter(function(p) { return p.name !== name; });
@@ -201,7 +290,6 @@ app.post('/api/roblox/leave', function(req, res) {
     res.json({ success: true });
 });
 
-// Roblox: aktualizuj pozycje gracza
 app.post('/api/roblox/update', function(req, res) {
     var name = req.body.name;
     var health = req.body.health;
@@ -217,14 +305,12 @@ app.post('/api/roblox/update', function(req, res) {
     res.json({ success: true });
 });
 
-// Roblox: pobierz komendy do wykonania
 app.get('/api/roblox/commands', function(req, res) {
     var cmds = commandQueue.slice();
     commandQueue = [];
     res.json(cmds);
 });
 
-// Roblox: sprawdz czy gracz jest zbanowany
 app.get('/api/roblox/checkban', function(req, res) {
     var name = req.query.name;
     var isBanned = false;
@@ -239,14 +325,20 @@ app.get('/api/roblox/checkban', function(req, res) {
     res.json({ banned: isBanned, reason: reason });
 });
 
-// === SOCKET ===
+// ============================================
+// SOCKET + START
+// ============================================
+
 io.on('connection', function(socket) {
     socket.emit('playerList', players);
     socket.emit('serverStatus', serverStatus);
 });
 
 setInterval(function() {
-    if (serverStatus.isOnline) { serverStatus.uptime++; io.emit('uptimeUpdate', serverStatus.uptime); }
+    if (serverStatus.isOnline) {
+        serverStatus.uptime++;
+        io.emit('uptimeUpdate', serverStatus.uptime);
+    }
 }, 1000);
 
 server.listen(PORT, function() {
@@ -256,6 +348,7 @@ server.listen(PORT, function() {
     console.log('  Panel: http://localhost:' + PORT);
     console.log('  Loginy: VsXe, WeXiO, WiSnNiA');
     console.log('  Haslo: admin123');
+    console.log('  Discord Bany: ' + (DISCORD_WEBHOOK.indexOf('TUTAJ') === -1 ? 'PODLACZONY ✅' : 'NIE PODLACZONY ❌'));
     console.log('========================================');
     console.log('');
 });
