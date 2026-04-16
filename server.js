@@ -30,57 +30,87 @@ var bannedPlayers = [];
 var commandQueue = [];
 
 // ============================================
-// DISCORD — TYLKO BANY
+// DISCORD — TYLKO BANY (PROFESJONALNE)
 // ============================================
 function sendDiscordBan(data) {
     var https = require('https');
     var url = require('url');
     var now = new Date().toLocaleString('pl-PL');
 
-    var embed = {
-        title: "🔨 Gracz Zbanowany",
-        color: 15158332,
-        fields: [
-            {
-                name: "👤 Zbanowany gracz",
-                value: "```" + data.name + "```",
-                inline: true
-            },
-            {
-                name: "👮 Przez admina",
-                value: "```" + (data.admin || 'Panel') + "```",
-                inline: true
-            },
-            {
-                name: "\u200b",
-                value: "\u200b",
-                inline: false
-            },
-            {
-                name: "📋 Powód bana",
-                value: "```" + (data.reason || 'Brak powodu') + "```",
-                inline: false
-            },
-            {
-                name: "⏱️ Czas trwania",
-                value: "```" + (data.duration || 'Permanentny') + "```",
-                inline: true
-            },
-            {
-                name: "🕐 Data i godzina",
-                value: "```" + now + "```",
-                inline: true
-            }
-        ],
-        footer: {
-            text: "Łomża Roleplay • System Banów"
-        },
-        timestamp: new Date().toISOString()
-    };
+    var durationText = '';
+    if (data.duration === '1h') durationText = '1 Godzina';
+    else if (data.duration === '24h') durationText = '24 Godziny';
+    else if (data.duration === '7d') durationText = '7 Dni';
+    else if (data.duration === '30d') durationText = '30 Dni';
+    else if (data.duration === 'perm') durationText = '🔴 Permanentny';
+    else durationText = data.duration || 'Permanentny';
 
     var payload = JSON.stringify({
         username: "Łomża Roleplay",
-        embeds: [embed]
+        embeds: [
+            {
+                author: {
+                    name: "System Banów • Łomża Roleplay"
+                },
+                title: "🔨 Nowy Ban",
+                color: 15158332,
+                description: "Gracz **" + data.name + "** został zbanowany na serwerze.",
+                fields: [
+                    {
+                        name: "👤 Zbanowany Gracz",
+                        value: "```yml\n" + data.name + "\n```",
+                        inline: true
+                    },
+                    {
+                        name: "👮 Zbanowany przez",
+                        value: "```yml\n" + (data.admin || 'Panel') + "\n```",
+                        inline: true
+                    },
+                    {
+                        name: "\u200B",
+                        value: "\u200B",
+                        inline: false
+                    },
+                    {
+                        name: "📋 Powód Bana",
+                        value: "```fix\n" + (data.reason || 'Brak powodu') + "\n```",
+                        inline: false
+                    },
+                    {
+                        name: "⏱️ Czas Trwania",
+                        value: "```fix\n" + durationText + "\n```",
+                        inline: true
+                    },
+                    {
+                        name: "📅 Data i Godzina",
+                        value: "```fix\n" + now + "\n```",
+                        inline: true
+                    },
+                    {
+                        name: "\u200B",
+                        value: "\u200B",
+                        inline: false
+                    },
+                    {
+                        name: "🆔 ID Gracza",
+                        value: "```yml\n" + (data.userId || 'Nieznane') + "\n```",
+                        inline: true
+                    },
+                    {
+                        name: "🌐 Serwer",
+                        value: "```yml\nŁomża Roleplay\n```",
+                        inline: true
+                    }
+                ],
+                thumbnail: {
+                    url: "https://www.roblox.com/headshot-thumbnail/image?userId=" + (data.userId || '1') + "&width=420&height=420&format=png"
+                },
+                footer: {
+                    text: "Łomża Roleplay • System Banów • " + now
+                },
+                timestamp: new Date().toISOString()
+            }
+        ]
     });
 
     try {
@@ -177,13 +207,33 @@ app.post('/api/players/ban', function(req, res) {
     var reason = req.body.reason || 'Brak powodu';
     var duration = req.body.duration || 'perm';
     var admin = req.body.admin || 'Panel';
-    players = players.filter(function(p) { return p.name !== name; });
-    bannedPlayers.push({ name: name, reason: reason, duration: duration, time: new Date().toLocaleString('pl-PL') });
-    commandQueue.push({ type: 'ban', target: name, reason: reason, duration: duration, time: Date.now() });
-    addLog('ban', '🔨 ' + name + ' ZBANOWANY! Powod: ' + reason);
 
-    // Wyslij TYLKO ban na Discorda
-    sendDiscordBan({ name: name, reason: reason, duration: duration, admin: admin });
+    var userId = '1';
+    for (var i = 0; i < players.length; i++) {
+        if (players[i].name === name) {
+            userId = players[i].id || '1';
+            break;
+        }
+    }
+
+    players = players.filter(function(p) { return p.name !== name; });
+    bannedPlayers.push({
+        name: name,
+        reason: reason,
+        duration: duration,
+        admin: admin,
+        time: new Date().toLocaleString('pl-PL')
+    });
+    commandQueue.push({ type: 'ban', target: name, reason: reason, duration: duration, time: Date.now() });
+    addLog('ban', '🔨 ' + name + ' ZBANOWANY przez ' + admin + '! Powod: ' + reason);
+
+    sendDiscordBan({
+        name: name,
+        reason: reason,
+        duration: duration,
+        admin: admin,
+        userId: userId
+    });
 
     io.emit('playerList', players);
     res.json({ success: true });
@@ -348,7 +398,7 @@ server.listen(PORT, function() {
     console.log('  Panel: http://localhost:' + PORT);
     console.log('  Loginy: VsXe, WeXiO, WiSnNiA');
     console.log('  Haslo: admin123');
-    console.log('  Discord Bany: ' + (DISCORD_WEBHOOK.indexOf('TUTAJ') === -1 ? 'PODLACZONY ✅' : 'NIE PODLACZONY ❌'));
+    console.log('  Discord Bany: ' + (DISCORD_WEBHOOK.indexOf('TUTAJ') === -1 ? 'PODLACZONY' : 'NIE PODLACZONY'));
     console.log('========================================');
     console.log('');
 });
