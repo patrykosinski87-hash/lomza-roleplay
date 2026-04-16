@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Łomża Roleplay — Admin Panel</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100vh}
+#loginScreen{display:flex;justify-content:center;align-items:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#1a0533 0%,#070711 60%)}
+.login-wrap{position:relative;width:440px}
+.login-glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,0.3) 0%,transparent 70%);pointer-events:none}
+.login-box{background:rgba(255,255,255,0.03);border:1px solid rgba(139,92,246,0.3);border-radius:24px;padding:48px 40px;text-align:center;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(139,92,246,0.15),inset 0 1px 0 rgba(255,255,255,0.05);position:relative}
+.login-logo{width:72px;height:72px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:20px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 32px rgba(139,92,246,0.4)}
+.login-title{font-size:26px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
+.login-title span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-sub{color:#6b7280;font-size:14px;margin-bottom:32px}
+.login-label{text-align:left;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.login-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(139,92,246,0.2);background:rgba(139,92,246,0.05);color:#fff;font-size:15px;margin-bottom:16px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif}
+.login-input:focus{border-color:#8b5cf6;background:rgba(139,92,246,0.1);box-shadow:0 0 0 3px rgba(139,92,246,0.15)}
+.login-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(139,92,246,0.4)}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(139,92,246,0.5)}
+#loginError{color:#f87171;margin-top:14px;font-size:13px;font-weight:500;display:none;padding:10px;background:rgba(248,113,113,0.1);border-radius:8px}
+#panel{display:none}
+.topbar{background:rgba(10,10,20,0.95);border-bottom:1px solid rgba(139,92,246,0.15);padding:0 24px;height:64px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.topbar-brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-name{font-size:18px;font-weight:800;letter-spacing:-0.5px}
+.brand-name span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.server-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;letter-spacing:0.5px}
+.badge-dot{width:7px;height:7px;border-radius:50%}
+.badge-online{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3)}
+.badge-online .badge-dot{background:#34d399;box-shadow:0 0 6px #34d399;animation:pd 2s infinite}
+.badge-offline{background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)}
+.badge-offline .badge-dot{background:#f87171}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:0.4}}
+.uptime-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;font-family:'Inter',monospace}
+.admin-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);color:#f472b6}
+.btn-logout{padding:8px 18px;border-radius:10px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.1);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif}
+.btn-logout:hover{background:rgba(248,113,113,0.2)}
+.layout{display:flex;min-height:calc(100vh - 64px)}
+.sidebar{width:230px;background:rgba(10,10,20,0.8);border-right:1px solid rgba(139,92,246,0.1);padding:20px 12px;display:flex;flex-direction:column;gap:4px}
+.sidebar-section{font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 4px;margin-top:8px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;cursor:pointer;color:#6b7280;font-size:14px;font-weight:500;transition:all 0.2s;border:1px solid transparent}
+.sidebar-item:hover{background:rgba(139,92,246,0.08);color:#d1d5db}
+.sidebar-item.active{background:rgba(139,92,246,0.12);color:#a78bfa;border-color:rgba(139,92,246,0.2)}
+.sidebar-icon{font-size:18px;width:22px;text-align:center}
+.sidebar-item .notif{margin-left:auto;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.main-content{flex:1;padding:28px;overflow-y:auto}
+.page{display:none}.page.active{display:block;animation:fu 0.3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:28px}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px}
+.page-title span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-sub{color:#6b7280;font-size:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:22px;position:relative;overflow:hidden;transition:all 0.3s;cursor:default}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad)}
+.stat-card:hover{transform:translateY(-4px);border-color:rgba(139,92,246,0.2);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+.stat-card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.stat-value{font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:4px}
+.stat-label{color:#6b7280;font-size:13px;font-weight:500}
+.card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:24px;margin-bottom:20px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.card-title-icon{width:32px;height:32px;border-radius:8px;background:rgba(139,92,246,0.15);display:flex;align-items:center;justify-content:center;font-size:16px}
+.btn{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;font-family:'Inter',sans-serif}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;box-shadow:0 4px 12px rgba(139,92,246,0.3)}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 12px rgba(16,185,129,0.3)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;box-shadow:0 4px 12px rgba(239,68,68,0.3)}
+.btn-warning{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;box-shadow:0 4px 12px rgba(245,158,11,0.3)}
+.btn-ghost{background:rgba(255,255,255,0.05);color:#9ca3af;border:1px solid rgba(255,255,255,0.08)}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.input{padding:11px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:14px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif}
+.input:focus{border-color:rgba(139,92,246,0.5);background:rgba(139,92,246,0.05);box-shadow:0 0 0 3px rgba(139,92,246,0.1)}
+.input-group{display:flex;gap:8px;margin-bottom:14px}.input-group .input{flex:1}
+.form-label{font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.qa-card{padding:20px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);cursor:pointer;text-align:center;transition:all 0.3s}
+.qa-card:hover{transform:translateY(-4px);border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.05);box-shadow:0 8px 30px rgba(139,92,246,0.15)}
+.qa-icon{font-size:30px;margin-bottom:10px}.qa-label{font-size:13px;font-weight:600;color:#d1d5db}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.06)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06)}
+tbody td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(139,92,246,0.04)}
+.player-name{font-weight:700;color:#c4b5fd}
+.player-id{color:#4b5563;font-family:monospace;font-size:12px}
+.hp-bar-wrap{display:flex;align-items:center;gap:8px}
+.hp-bar{width:70px;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.hp-fill{height:100%;border-radius:3px;transition:width 0.5s}
+.hp-text{font-size:13px;font-weight:600}
+.pos-badge{padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.15)}
+.actions-cell{display:flex;gap:6px}
+.log-wrap{background:rgba(0,0,0,0.3);border-radius:12px;padding:12px;max-height:480px;overflow-y:auto}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:8px;margin-bottom:4px;font-size:13px;font-family:'Inter',monospace;border-left:3px solid transparent;transition:background 0.2s}
+.log-item:hover{background:rgba(255,255,255,0.03)}
+.log-msg{flex:1}.log-time{color:#4b5563;font-size:11px;margin-left:12px;white-space:nowrap}
+.log-join{border-left-color:#10b981;background:rgba(16,185,129,0.04)}
+.log-leave{border-left-color:#f59e0b;background:rgba(245,158,11,0.04)}
+.log-kick{border-left-color:#f97316;background:rgba(249,115,22,0.04)}
+.log-ban{border-left-color:#ef4444;background:rgba(239,68,68,0.04)}
+.log-command{border-left-color:#8b5cf6;background:rgba(139,92,246,0.04)}
+.log-server{border-left-color:#06b6d4;background:rgba(6,182,212,0.04)}
+.log-info{border-left-color:#6b7280;background:rgba(107,114,128,0.04)}
+.log-announce{border-left-color:#eab308;background:rgba(234,179,8,0.04)}
+.console-wrap{background:#000;border-radius:12px;padding:20px;font-family:'Consolas','Courier New',monospace;font-size:13px;min-height:320px;max-height:420px;overflow-y:auto;margin-bottom:14px;border:1px solid rgba(255,255,255,0.05)}
+.con-line{margin-bottom:5px;line-height:1.5}
+.ban-card{display:flex;justify-content:space-between;align-items:center;padding:16px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-radius:12px;margin-bottom:10px}
+.ban-name{font-weight:700;color:#fca5a5;font-size:15px;margin-bottom:4px}
+.ban-info{color:#6b7280;font-size:13px}
+.empty{text-align:center;padding:50px 20px;color:#4b5563}
+.empty-icon{font-size:52px;margin-bottom:14px;filter:grayscale(0.5)}
+.empty p{font-size:15px;font-weight:500}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal-box{background:#0f0f1a;border:1px solid rgba(139,92,246,0.2);border-radius:20px;padding:28px;width:440px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:fu 0.3s ease}
+.modal-box h2{font-size:20px;font-weight:800;margin-bottom:20px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+<div class="login-wrap">
+<div class="login-glow"></div>
+<div class="login-box">
+<div class="login-logo">🏙️</div>
+<div class="login-title"><span>Łomża Roleplay</span></div>
+<div class="login-sub">Panel Administratora</div>
+<div class="login-label">Login</div>
+<input class="login-input" type="text" id="loginInput" placeholder="Wpisz login...">
+<div class="login-label">Hasło</div>
+<input class="login-input" type="password" id="passwordInput" placeholder="Wpisz hasło...">
+<button class="login-btn" id="loginBtn">🔑 Zaloguj się</button>
+<div id="loginError">❌ Zły login lub hasło!</div>
+</div>
+</div>
+</div>
+
+<div id="panel">
+<div class="topbar">
+<div class="topbar-brand"><div class="brand-icon">🏙️</div><div class="brand-name"><span>Łomża Roleplay</span></div></div>
+<div class="topbar-right">
+<div class="server-badge badge-offline" id="serverBadge"><div class="badge-dot"></div><span id="serverBadgeText">OFFLINE</span></div>
+<div class="uptime-badge" id="uptimeDisplay">00:00:00</div>
+<div class="admin-badge" id="adminBadge">👤 Admin</div>
+<button class="btn-logout" id="logoutBtn">🚪 Wyloguj</button>
+</div>
+</div>
+<div class="layout">
+<div class="sidebar">
+<div class="sidebar-section">Główne</div>
+<div class="sidebar-item active" data-page="dashboard"><span class="sidebar-icon">📊</span> Dashboard</div>
+<div class="sidebar-item" data-page="players"><span class="sidebar-icon">👥</span> Gracze <span class="notif" id="playerNotif">0</span></div>
+<div class="sidebar-section">Narzędzia</div>
+<div class="sidebar-item" data-page="console"><span class="sidebar-icon">💻</span> Konsola</div>
+<div class="sidebar-item" data-page="bans"><span class="sidebar-icon">🔨</span> Bany</div>
+<div class="sidebar-section">System</div>
+<div class="sidebar-item" data-page="logs"><span class="sidebar-icon">📜</span> Logi</div>
+<div class="sidebar-item" data-page="settings"><span class="sidebar-icon">⚙️</span> Ustawienia</div>
+</div>
+<div class="main-content">
+
+<div class="page active" id="page-dashboard">
+<div class="page-header"><div class="page-title"><span>Dashboard</span></div><div class="page-sub">Panel administracyjny Łomża Roleplay</div></div>
+<div class="stats-grid">
+<div class="stat-card" style="--grad:linear-gradient(135deg,#8b5cf6,#7c3aed)"><div class="stat-card-top"><div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Graczy Online</div></div><div style="font-size:32px;opacity:0.6">👥</div></div></div>
+<div class="stat-card" style="--grad:linear-gradient(135deg,#10b981,#059669)"><div class="stat-card-top"><div><div class="stat-value" id="statStatus" style="font-size:20px;padding-top:6px">OFFLINE</div><div class="stat-label">Status Serwera</div></div><div style="font-size:32px;opacity:0.6">🖥️</div></div></div>
+<div class="stat-card" style="--grad:linear-gradient(135deg,#ef4444,#dc2626)"><div class="stat-card-top"><div><div class="stat-value" id="statBans">0</div><div class="stat-label">Zbanowanych</div></div><div style="font-size:32px;opacity:0.6">🔨</div></div></div>
+<div class="stat-card" style="--grad:linear-gradient(135deg,#f59e0b,#d97706)"><div class="stat-card-top"><div><div class="stat-value uptime" id="statUptime" style="font-size:22px;padding-top:4px">00:00:00</div><div class="stat-label">Uptime</div></div><div style="font-size:32px;opacity:0.6">⏱️</div></div></div>
+</div>
+<div class="card"><div class="card-title"><div class="card-title-icon">⚡</div> Szybkie Akcje</div>
+<div class="quick-grid">
+<div class="qa-card" id="qaToggle"><div class="qa-icon" id="qaIcon">🟢</div><div class="qa-label" id="qaText">Włącz Serwer</div></div>
+<div class="qa-card" id="qaAdd"><div class="qa-icon">👤</div><div class="qa-label">Test Gracz</div></div>
+<div class="qa-card" id="qaAnn"><div class="qa-icon">📢</div><div class="qa-label">Ogłoszenie</div></div>
+<div class="qa-card" id="qaCon"><div class="qa-icon">💻</div><div class="qa-label">Konsola</div></div>
+<div class="qa-card" id="qaPla"><div class="qa-icon">👥</div><div class="qa-label">Gracze</div></div>
+<div class="qa-card" id="qaClr"><div class="qa-icon">🗑️</div><div class="qa-label">Wyczyść Logi</div></div>
+</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">📜</div> Ostatnie zdarzenia</div><div class="log-wrap" id="dashLogs"><div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div></div></div>
+</div>
+
+<div class="page" id="page-players">
+<div class="page-header"><div class="page-title"><span>Gracze</span></div><div class="page-sub">Zarządzaj graczami na serwerze</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">👥</div> Online — <span id="pCount" style="color:#a78bfa">0</span><button class="btn btn-primary btn-sm" id="addPBtn" style="margin-left:auto">+ Test Gracz</button></div>
+<div class="table-wrap"><table><thead><tr><th>Gracz</th><th>ID</th><th>HP</th><th>Pozycja</th><th>Dołączył</th><th>Akcje</th></tr></thead><tbody id="pBody"></tbody></table></div>
+<div class="empty" id="noP"><div class="empty-icon">👥</div><p>Brak graczy online</p></div>
+</div></div>
+
+<div class="page" id="page-console">
+<div class="page-header"><div class="page-title"><span>Konsola</span></div><div class="page-sub">Wykonuj komendy na serwerze</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">💻</div> Terminal<button class="btn btn-ghost btn-sm" id="clrCon" style="margin-left:auto">🗑️ Wyczyść</button></div>
+<div class="console-wrap" id="conBox"><div class="con-line" style="color:#8b5cf6">╔══════════════════════════════════════╗</div><div class="con-line" style="color:#8b5cf6">║  Łomża Roleplay — Admin Console      ║</div><div class="con-line" style="color:#8b5cf6">╚══════════════════════════════════════╝</div><div class="con-line" style="color:#6b7280">Wpisz komendę...</div></div>
+<div class="input-group"><input class="input" id="conIn" placeholder="np. kick Gracz / ban Gracz / heal all"><button class="btn btn-primary" id="conExe">⚡ Wykonaj</button></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+<button class="btn btn-ghost btn-sm" onclick="qCmd('players list')">players</button>
+<button class="btn btn-ghost btn-sm" onclick="qCmd('heal all')">heal all</button>
+<button class="btn btn-ghost btn-sm" onclick="qCmd('tp all spawn')">tp spawn</button>
+<button class="btn btn-ghost btn-sm" onclick="qCmd('restart')">restart</button>
+<button class="btn btn-ghost btn-sm" onclick="qCmd('give all money 1000')">give money</button>
+</div></div></div>
+
+<div class="page" id="page-bans">
+<div class="page-header"><div class="page-title"><span>Bany</span></div><div class="page-sub">Lista zbanowanych graczy</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">🔨</div> Zbanowani</div><div id="banList"><div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div></div></div>
+</div>
+
+<div class="page" id="page-logs">
+<div class="page-header"><div class="page-title"><span>Logi</span></div><div class="page-sub">Historia zdarzeń</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">📜</div> Wszystkie Logi<button class="btn btn-danger btn-sm" id="clrLogs" style="margin-left:auto">🗑️ Wyczyść</button></div><div class="log-wrap" id="allLogs" style="max-height:600px"><div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div></div></div>
+</div>
+
+<div class="page" id="page-settings">
+<div class="page-header"><div class="page-title"><span>Ustawienia</span></div><div class="page-sub">Konfiguracja serwera</div></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">🖥️</div> Serwer</div>
+<div class="form-label">Nazwa Serwera</div><div class="input-group"><input class="input" id="sName" placeholder="Łomża Roleplay"></div>
+<div class="form-label">Max Graczy</div><div class="input-group"><input class="input" id="sMax" type="number" placeholder="50"></div>
+<button class="btn btn-primary" id="sSave">💾 Zapisz</button></div>
+<div class="card"><div class="card-title"><div class="card-title-icon">🔌</div> Roblox API</div>
+<p style="color:#6b7280;font-size:13px;margin-bottom:12px">Endpointy do HttpService w grze Roblox:</p>
+<div style="background:#000;border-radius:10px;padding:16px;font-family:Consolas,monospace;font-size:13px;color:#a78bfa">
+<div>POST /api/roblox/join   — gracz dołącza</div>
+<div>POST /api/roblox/leave  — gracz wychodzi</div>
+<div>POST /api/roblox/update — aktualizuj HP/pozycję</div>
+<div>GET  /api/roblox/commands — pobierz komendy</div>
+<div>GET  /api/roblox/checkban — sprawdź ban</div>
+</div></div>
+</div>
+
+</div></div></div>
+
+<div class="modal-bg" id="kickModal"><div class="modal-box"><h2>👢 Kick gracza</h2><input type="hidden" id="kickName"><div class="form-label">Powód</div><input class="input" id="kickReason" placeholder="Powód..." style="width:100%"><div class="modal-footer"><button class="btn btn-ghost" id="kickNo">Anuluj</button><button class="btn btn-warning" id="kickYes">👢 Wyrzuć</button></div></div></div>
+<div class="modal-bg" id="banModal"><div class="modal-box"><h2>🔨 Zbanuj gracza</h2><input type="hidden" id="banName"><div class="form-label">Powód</div><input class="input" id="banReason" placeholder="Powód..." style="width:100%;margin-bottom:14px"><div class="form-label">Czas</div><select class="input" id="banDur" style="width:100%"><option value="1h">1 Godzina</option><option value="24h">24 Godziny</option><option value="7d">7 Dni</option><option value="30d">30 Dni</option><option value="perm">Permanentny</option></select><div class="modal-footer"><button class="btn btn-ghost" id="banNo">Anuluj</button><button class="btn btn-danger" id="banYes">🔨 Zbanuj</button></div></div></div>
+<div class="modal-bg" id="annModal"><div class="modal-box"><h2>📢 Ogłoszenie</h2><div class="form-label">Treść</div><input class="input" id="annMsg" placeholder="Treść ogłoszenia..." style="width:100%"><div class="modal-footer"><button class="btn btn-ghost" id="annNo">Anuluj</button><button class="btn btn-success" id="annYes">📢 Wyślij</button></div></div></div>
+
+<script>
+var socket=io(),adminName='Admin';
+function api(m,u,d){var o={method:m,headers:{'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);return fetch(u,o).then(function(r){return r.json()})}
+function fUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec}
+
+// LOGIN
+document.getElementById('loginBtn').addEventListener('click',function(){
+    var login=document.getElementById('loginInput').value;
+    var pw=document.getElementById('passwordInput').value;
+    api('POST','/api/login',{login:login,password:pw}).then(function(d){
+        if(d.success){
+            adminName=d.login;
+            document.getElementById('loginScreen').style.display='none';
+            document.getElementById('panel').style.display='block';
+            document.getElementById('adminBadge').textContent='👤 '+adminName;
+            loadDash();
+        }else{document.getElementById('loginError').style.display='block'}
+    });
+});
+document.getElementById('loginInput').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('passwordInput').focus()});
+document.getElementById('passwordInput').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
+document.getElementById('logoutBtn').addEventListener('click',function(){
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('panel').style.display='none';
+    document.getElementById('loginInput').value='';
+    document.getElementById('passwordInput').value='';
+    document.getElementById('loginError').style.display='none';
+});
+
+// NAV
+document.querySelectorAll('.sidebar-item').forEach(function(i){
+    i.addEventListener('click',function(){
+        var p=this.getAttribute('data-page');
+        document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
+        document.querySelectorAll('.sidebar-item').forEach(function(x){x.classList.remove('active')});
+        document.getElementById('page-'+p).classList.add('active');
+        this.classList.add('active');
+        if(p==='bans')loadBans();if(p==='logs')loadLogs();if(p==='players')loadP();
+    });
+});
+function goTo(p){document.querySelector('[data-page="'+p+'"]').click()}
+
+// DASHBOARD
+function loadDash(){
+    api('GET','/api/status').then(function(d){
+        document.getElementById('statPlayers').textContent=d.playerCount;
+        document.getElementById('statBans').textContent=d.bannedCount;
+        updateBadge(d.isOnline);
+    });
+    loadLogs();loadP();
+}
+function updateBadge(on){
+    var b=document.getElementById('serverBadge');
+    b.className='server-badge '+(on?'badge-online':'badge-offline');
+    document.getElementById('serverBadgeText').textContent=on?'ONLINE':'OFFLINE';
+    document.getElementById('statStatus').textContent=on?'ONLINE':'OFFLINE';
+    document.getElementById('statStatus').style.color=on?'#34d399':'#f87171';
+    document.getElementById('qaIcon').textContent=on?'🔴':'🟢';
+    document.getElementById('qaText').textContent=on?'Wyłącz Serwer':'Włącz Serwer';
+}
+
+// QUICK
+document.getElementById('qaToggle').addEventListener('click',function(){api('POST','/api/server/toggle').then(function(d){updateBadge(d.isOnline)})});
+document.getElementById('qaAdd').addEventListener('click',addTP);
+document.getElementById('addPBtn').addEventListener('click',addTP);
+document.getElementById('qaAnn').addEventListener('click',function(){document.getElementById('annModal').classList.add('show')});
+document.getElementById('qaCon').addEventListener('click',function(){goTo('console')});
+document.getElementById('qaPla').addEventListener('click',function(){goTo('players')});
+document.getElementById('qaClr').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
+function addTP(){api('POST','/api/test/addplayers').then(function(){loadP()})}
+
+// PLAYERS
+function loadP(){api('GET','/api/players').then(function(p){renderP(p)})}
+function renderP(list){
+    var tb=document.getElementById('pBody'),no=document.getElementById('noP');
+    document.getElementById('pCount').textContent=list.length;
+    document.getElementById('statPlayers').textContent=list.length;
+    document.getElementById('playerNotif').textContent=list.length;
+    if(!list.length){tb.innerHTML='';no.style.display='block';return}
+    no.style.display='none';
+    var h='';
+    list.forEach(function(p){
+        var hc=p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
+        h+='<tr><td><span class="player-name">'+p.name+'</span></td><td><span class="player-id">'+p.id+'</span></td>';
+        h+='<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
+        h+='<td><span class="pos-badge">'+p.position+'</span></td><td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
+        h+='<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨</button></div></td></tr>';
+    });
+    tb.innerHTML=h;
+    document.querySelectorAll('.kb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('kickName').value=this.getAttribute('data-n');document.getElementById('kickModal').classList.add('show')})});
+    document.querySelectorAll('.bb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('banName').value=this.getAttribute('data-n');document.getElementById('banModal').classList.add('show')})});
+}
+
+// KICK
+document.getElementById('kickYes').addEventListener('click',function(){
+    api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value}).then(function(){
+        document.getElementById('kickModal').classList.remove('show');document.getElementById('kickReason').value='';loadP();loadLogs();
+    });
+});
+document.getElementById('kickNo').addEventListener('click',function(){document.getElementById('kickModal').classList.remove('show')});
+
+// BAN
+document.getElementById('banYes').addEventListener('click',function(){
+    api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value,duration:document.getElementById('banDur').value}).then(function(){
+        document.getElementById('banModal').classList.remove('show');document.getElementById('banReason').value='';loadP();loadLogs();
+    });
+});
+document.getElementById('banNo').addEventListener('click',function(){document.getElementById('banModal').classList.remove('show')});
+
+// BANS
+function loadBans(){
+    api('GET','/api/bans').then(function(bans){
+        var c=document.getElementById('banList');
+        if(!bans.length){c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>';return}
+        var h='';
+        bans.forEach(function(b){
+            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div><div class="ban-info">Powód: '+b.reason+' • '+b.duration+' • '+b.time+'</div></div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
+        });
+        c.innerHTML=h;
+        document.querySelectorAll('.ub').forEach(function(b){b.addEventListener('click',function(){api('POST','/api/players/unban',{name:this.getAttribute('data-n')}).then(function(){loadBans()})})});
+    });
+}
+
+// LOGS
+function loadLogs(){api('GET','/api/logs').then(function(l){rLogs('dashLogs',l,8);rLogs('allLogs',l)})}
+function rLogs(id,logs,lim){
+    var c=document.getElementById(id),a=lim?logs.slice(0,lim):logs;
+    if(!a.length){c.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';return}
+    var h='';a.forEach(function(l){h+='<div class="log-item log-'+l.type+'"><span class="log-msg">'+l.message+'</span><span class="log-time">'+l.time+'</span></div>'});
+    c.innerHTML=h;
+}
+document.getElementById('clrLogs').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
+
+// CONSOLE
+document.getElementById('conExe').addEventListener('click',exCmd);
+document.getElementById('conIn').addEventListener('keypress',function(e){if(e.key==='Enter')exCmd()});
+function exCmd(){
+    var inp=document.getElementById('conIn'),cmd=inp.value.trim();if(!cmd)return;
+    addCon(adminName+'@lomza:~$ '+cmd,'#a78bfa');
+    api('POST','/api/command',{command:cmd}).then(function(){addCon('✓ Wykonano: '+cmd,'#34d399');loadLogs()});
+    inp.value='';
+}
+function qCmd(c){document.getElementById('conIn').value=c;exCmd()}
+function addCon(t,c){var b=document.getElementById('conBox'),l=document.createElement('div');l.className='con-line';l.style.color=c||'#fff';l.textContent=t;b.appendChild(l);b.scrollTop=b.scrollHeight}
+document.getElementById('clrCon').addEventListener('click',function(){document.getElementById('conBox').innerHTML='<div class="con-line" style="color:#8b5cf6">Konsola wyczyszczona.</div>'});
+
+// ANNOUNCE
+document.getElementById('annYes').addEventListener('click',function(){
+    var msg=document.getElementById('annMsg').value;if(!msg)return;
+    api('POST','/api/announce',{message:msg}).then(function(){
+        document.getElementById('annModal').classList.remove('show');document.getElementById('annMsg').value='';
+        addCon('📢 OGŁOSZENIE: '+msg,'#eab308');loadLogs();
+    });
+});
+document.getElementById('annNo').addEventListener('click',function(){document.getElementById('annModal').classList.remove('show')});
+
+// SETTINGS
+document.getElementById('sSave').addEventListener('click',function(){
+    api('POST','/api/server/settings',{name:document.getElementById('sName').value,maxPlayers:parseInt(document.getElementById('sMax').value)}).then(function(){alert('✅ Zapisano!')});
+});
+
+// SOCKET
+socket.on('playerList',function(p){renderP(p)});
+socket.on('newLog',function(){loadLogs()});
+socket.on('serverStatus',function(s){updateBadge(s.isOnline)});
+socket.on('uptimeUpdate',function(u){var t=fUp(u);document.getElementById('uptimeDisplay').textContent=t;document.getElementById('statUptime').textContent=t});
+</script>
+</body>
+</html>
