@@ -38,7 +38,7 @@ body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100
 .page{display:none}.page.active{display:block;animation:fu 0.3s ease}
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .page-header{margin-bottom:28px}
-.page-title{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px}
+.page-title{font-size:26px;font-weight:800;margin-bottom:4px}
 .page-title span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .page-sub{color:#6b7280;font-size:14px}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:24px}
@@ -63,7 +63,7 @@ body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100
 .input{padding:11px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:14px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif;width:100%}
 .input:focus{border-color:rgba(139,92,246,0.5);background:rgba(139,92,246,0.05);box-shadow:0 0 0 3px rgba(139,92,246,0.1)}
 .input-group{display:flex;gap:8px;margin-bottom:14px}
-.input-group .input{flex:1}
+.input-group .input{flex:1;width:auto}
 .form-label{font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block}
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .qa-card{padding:20px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);cursor:pointer;text-align:center;transition:all 0.3s}
@@ -173,7 +173,7 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="con-line" style="color:#8b5cf6">╚══════════════════════════════════════╝</div>
 <div class="con-line" style="color:#6b7280">Wpisz komendę...</div>
 </div>
-<div class="input-group"><input class="input" id="conIn" placeholder="np. kick Gracz / ban Gracz / heal all" style="width:auto;flex:1"><button class="btn btn-primary" id="conExe">⚡ Wykonaj</button></div>
+<div class="input-group"><input class="input" id="conIn" placeholder="np. kick Gracz / ban Gracz / heal all"><button class="btn btn-primary" id="conExe">⚡ Wykonaj</button></div>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
 <button class="btn btn-ghost btn-sm" onclick="qCmd('players list')">players</button>
 <button class="btn btn-ghost btn-sm" onclick="qCmd('heal all')">heal all</button>
@@ -195,8 +195,8 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="page" id="page-settings">
 <div class="page-header"><div class="page-title"><span>Ustawienia</span></div><div class="page-sub">Konfiguracja serwera</div></div>
 <div class="card"><div class="card-title"><div class="card-title-icon">🖥️</div> Serwer</div>
-<div class="form-label">Nazwa Serwera</div><div class="input-group"><input class="input" id="sName" placeholder="Łomża Roleplay" style="width:auto;flex:1"></div>
-<div class="form-label">Max Graczy</div><div class="input-group"><input class="input" id="sMax" type="number" placeholder="50" style="width:auto;flex:1"></div>
+<div class="form-label">Nazwa Serwera</div><div class="input-group"><input class="input" id="sName" placeholder="Łomża Roleplay"></div>
+<div class="form-label">Max Graczy</div><div class="input-group"><input class="input" id="sMax" type="number" placeholder="50"></div>
 <button class="btn btn-primary" id="sSave">💾 Zapisz</button></div>
 <div class="card"><div class="card-title"><div class="card-title-icon">🔌</div> Roblox API</div>
 <div style="background:#000;border-radius:10px;padding:16px;font-family:Consolas,monospace;font-size:13px;color:#a78bfa">
@@ -211,237 +211,155 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="modal-bg" id="annModal"><div class="modal-box"><h2>📢 Ogłoszenie</h2><div class="form-label">Treść</div><input class="input" id="annMsg" placeholder="Treść ogłoszenia..."><div class="modal-footer"><button class="btn btn-ghost" id="annNo">Anuluj</button><button class="btn btn-success" id="annYes">📢 Wyślij</button></div></div></div>
 
 <script>
-// Sprawdz czy zalogowany jako admin
 var adminName = sessionStorage.getItem('adminName');
 var adminRole = sessionStorage.getItem('adminRole');
-if (!adminName || adminRole !== 'admin') {
-    window.location.href = '/';
-}
+if (!adminName || adminRole !== 'admin') { window.location.href = '/'; }
 document.getElementById('nameBadge').textContent = '👤 ' + adminName;
 
 var socket = io();
+function api(m,u,d){var o={method:m,headers:{'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);return fetch(u,o).then(function(r){return r.json();})}
+function fUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec}
+function durText(d){return{perm:'Permanentny','1h':'1 Godzina','24h':'24 Godziny','7d':'7 Dni','30d':'30 Dni'}[d]||d}
 
-function api(m, u, d) {
-    var o = {method:m, headers:{'Content-Type':'application/json'}};
-    if (d) o.body = JSON.stringify(d);
-    return fetch(u, o).then(function(r){ return r.json(); });
-}
-function fUp(s) {
-    var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
-    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec;
-}
-
-// NAWIGACJA
-document.querySelectorAll('.sidebar-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-        var page = this.getAttribute('data-page');
-        document.querySelectorAll('.sidebar-item').forEach(function(x){ x.classList.remove('active'); });
-        document.querySelectorAll('.page').forEach(function(x){ x.classList.remove('active'); });
+document.querySelectorAll('.sidebar-item').forEach(function(item){
+    item.addEventListener('click',function(){
+        var page=this.getAttribute('data-page');
+        document.querySelectorAll('.sidebar-item').forEach(function(x){x.classList.remove('active')});
+        document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
         this.classList.add('active');
         document.getElementById('page-'+page).classList.add('active');
-        if(page==='bans') loadBans();
-        if(page==='logs') loadLogs();
-        if(page==='players') loadP();
+        if(page==='bans')loadBans();
+        if(page==='logs')loadLogs();
+        if(page==='players')loadP();
     });
 });
-function goTo(p) { document.querySelector('[data-page="'+p+'"]').click(); }
+function goTo(p){document.querySelector('[data-page="'+p+'"]').click()}
 
-// STATUS
-function updateBadge(on) {
-    var b = document.getElementById('serverBadge');
-    b.className = 'server-badge '+(on?'badge-online':'badge-offline');
-    document.getElementById('serverBadgeText').textContent = on?'ONLINE':'OFFLINE';
-    document.getElementById('statStatus').textContent = on?'ONLINE':'OFFLINE';
-    document.getElementById('statStatus').style.color = on?'#34d399':'#f87171';
-    document.getElementById('qaIcon').textContent = on?'🔴':'🟢';
-    document.getElementById('qaText').textContent = on?'Wyłącz Serwer':'Włącz Serwer';
+function updateBadge(on){
+    var b=document.getElementById('serverBadge');
+    b.className='server-badge '+(on?'badge-online':'badge-offline');
+    document.getElementById('serverBadgeText').textContent=on?'ONLINE':'OFFLINE';
+    document.getElementById('statStatus').textContent=on?'ONLINE':'OFFLINE';
+    document.getElementById('statStatus').style.color=on?'#34d399':'#f87171';
+    document.getElementById('qaIcon').textContent=on?'🔴':'🟢';
+    document.getElementById('qaText').textContent=on?'Wyłącz Serwer':'Włącz Serwer';
 }
 
-// DASHBOARD
-function loadDash() {
+function loadDash(){
     api('GET','/api/status').then(function(d){
-        document.getElementById('statPlayers').textContent = d.playerCount;
-        document.getElementById('statBans').textContent = d.bannedCount;
+        document.getElementById('statPlayers').textContent=d.playerCount;
+        document.getElementById('statBans').textContent=d.bannedCount;
         updateBadge(d.isOnline);
     });
-    loadLogs(); loadP();
+    loadLogs();loadP();
 }
 
-document.getElementById('qaToggle').addEventListener('click', function(){
-    api('POST','/api/server/toggle').then(function(d){ updateBadge(d.isOnline); });
-});
-document.getElementById('qaAdd').addEventListener('click', function(){
-    api('POST','/api/test/addplayers').then(function(){ loadP(); });
-});
-document.getElementById('aQaAnn') && document.getElementById('qaAnn').addEventListener('click', function(){
-    document.getElementById('annModal').classList.add('show');
-});
-document.getElementById('qaAnn').addEventListener('click', function(){
-    document.getElementById('annModal').classList.add('show');
-});
-document.getElementById('qaCon').addEventListener('click', function(){ goTo('console'); });
-document.getElementById('qaPla').addEventListener('click', function(){ goTo('players'); });
-document.getElementById('qaClr').addEventListener('click', function(){
-    api('POST','/api/logs/clear').then(function(){ loadLogs(); });
-});
-document.getElementById('addPBtn').addEventListener('click', function(){
-    api('POST','/api/test/addplayers').then(function(){ loadP(); });
-});
+document.getElementById('qaToggle').addEventListener('click',function(){api('POST','/api/server/toggle').then(function(d){updateBadge(d.isOnline)})});
+document.getElementById('qaAdd').addEventListener('click',function(){api('POST','/api/test/addplayers').then(function(){loadP()})});
+document.getElementById('qaAnn').addEventListener('click',function(){document.getElementById('annModal').classList.add('show')});
+document.getElementById('qaCon').addEventListener('click',function(){goTo('console')});
+document.getElementById('qaPla').addEventListener('click',function(){goTo('players')});
+document.getElementById('qaClr').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
+document.getElementById('addPBtn').addEventListener('click',function(){api('POST','/api/test/addplayers').then(function(){loadP()})});
 
-// GRACZE
-function loadP() {
+function loadP(){
     api('GET','/api/players').then(function(list){
-        var tb = document.getElementById('pBody');
-        var no = document.getElementById('noP');
-        document.getElementById('pCount').textContent = list.length;
-        document.getElementById('statPlayers').textContent = list.length;
-        document.getElementById('playerNotif').textContent = list.length;
-        if (!list.length) { tb.innerHTML=''; no.style.display='block'; return; }
+        var tb=document.getElementById('pBody'),no=document.getElementById('noP');
+        document.getElementById('pCount').textContent=list.length;
+        document.getElementById('statPlayers').textContent=list.length;
+        document.getElementById('playerNotif').textContent=list.length;
+        if(!list.length){tb.innerHTML='';no.style.display='block';return}
         no.style.display='none';
         var h='';
         list.forEach(function(p){
-            var hc = p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
-            h += '<tr><td><span class="player-name">'+p.name+'</span></td>';
-            h += '<td><span class="player-id">'+p.id+'</span></td>';
-            h += '<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
-            h += '<td><span class="pos-badge">'+p.position+'</span></td>';
-            h += '<td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
-            h += '<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨</button></div></td></tr>';
+            var hc=p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
+            h+='<tr><td><span class="player-name">'+p.name+'</span></td><td><span class="player-id">'+p.id+'</span></td>';
+            h+='<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
+            h+='<td><span class="pos-badge">'+p.position+'</span></td><td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
+            h+='<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨</button></div></td></tr>';
         });
-        tb.innerHTML = h;
-        document.querySelectorAll('.kb').forEach(function(b){
-            b.addEventListener('click', function(){
-                document.getElementById('kickName').value = this.getAttribute('data-n');
-                document.getElementById('kickReason').value = '';
-                document.getElementById('kickModal').classList.add('show');
-            });
-        });
-        document.querySelectorAll('.bb').forEach(function(b){
-            b.addEventListener('click', function(){
-                document.getElementById('banName').value = this.getAttribute('data-n');
-                document.getElementById('banReason').value = '';
-                document.getElementById('banModal').classList.add('show');
-            });
-        });
+        tb.innerHTML=h;
+        document.querySelectorAll('.kb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('kickName').value=this.getAttribute('data-n');document.getElementById('kickReason').value='';document.getElementById('kickModal').classList.add('show')})});
+        document.querySelectorAll('.bb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('banName').value=this.getAttribute('data-n');document.getElementById('banReason').value='';document.getElementById('banModal').classList.add('show')})});
     });
 }
 
-// BANY
-function durText(d){ return {perm:'Permanentny','1h':'1 Godzina','24h':'24 Godziny','7d':'7 Dni','30d':'30 Dni'}[d]||d; }
-function loadBans() {
+function loadBans(){
     api('GET','/api/bans').then(function(bans){
-        document.getElementById('statBans').textContent = bans.length;
-        var c = document.getElementById('banList');
-        if (!bans.length) { c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>'; return; }
+        document.getElementById('statBans').textContent=bans.length;
+        var c=document.getElementById('banList');
+        if(!bans.length){c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>';return}
         var h='';
         bans.forEach(function(b){
-            h += '<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
-            h += '<div class="ban-info">Powód: '+b.reason+' • '+durText(b.duration)+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
-            h += '</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
+            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
+            h+='<div class="ban-info">Powód: '+b.reason+' • '+durText(b.duration)+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
+            h+='</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
         });
-        c.innerHTML = h;
-        document.querySelectorAll('.ub').forEach(function(b){
-            b.addEventListener('click', function(){
-                api('POST','/api/players/unban',{name:this.getAttribute('data-n'),admin:adminName}).then(function(){ loadBans(); });
-            });
-        });
+        c.innerHTML=h;
+        document.querySelectorAll('.ub').forEach(function(b){b.addEventListener('click',function(){api('POST','/api/players/unban',{name:this.getAttribute('data-n'),admin:adminName}).then(function(){loadBans()})})});
     });
 }
 
-// LOGI
-function renderLog(log){
-    return '<div class="log-item log-'+log.type+'"><span class="log-msg">'+log.message+'</span><span class="log-time">'+log.time+'</span></div>';
-}
-function loadLogs() {
+function renderLog(log){return'<div class="log-item log-'+log.type+'"><span class="log-msg">'+log.message+'</span><span class="log-time">'+log.time+'</span></div>'}
+function loadLogs(){
     api('GET','/api/logs').then(function(logs){
-        var al = document.getElementById('allLogs');
-        var dl = document.getElementById('dashLogs');
-        if (!logs.length) {
-            al.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';
-            dl.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';
-            return;
-        }
-        var h=''; logs.forEach(function(x){ h+=renderLog(x); });
-        al.innerHTML = h;
-        var dh=''; logs.slice(0,15).forEach(function(x){ dh+=renderLog(x); });
-        dl.innerHTML = dh;
+        var al=document.getElementById('allLogs'),dl=document.getElementById('dashLogs');
+        if(!logs.length){al.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';dl.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';return}
+        var h='';logs.forEach(function(x){h+=renderLog(x)});al.innerHTML=h;
+        var dh='';logs.slice(0,15).forEach(function(x){dh+=renderLog(x)});dl.innerHTML=dh;
     });
 }
-document.getElementById('clrLogs').addEventListener('click', function(){
-    api('POST','/api/logs/clear').then(function(){ loadLogs(); });
-});
+document.getElementById('clrLogs').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
 
-// KONSOLA
-function qCmd(c){ document.getElementById('conIn').value=c; document.getElementById('conExe').click(); }
-document.getElementById('conExe').addEventListener('click', function(){
-    var cmd = document.getElementById('conIn').value.trim();
-    if (!cmd) return;
-    var box = document.getElementById('conBox');
-    var d = document.createElement('div'); d.className='con-line'; d.style.color='#8b5cf6'; d.textContent='> '+cmd; box.appendChild(d);
+function qCmd(c){document.getElementById('conIn').value=c;document.getElementById('conExe').click()}
+document.getElementById('conExe').addEventListener('click',function(){
+    var cmd=document.getElementById('conIn').value.trim();if(!cmd)return;
+    var box=document.getElementById('conBox');
+    var d=document.createElement('div');d.className='con-line';d.style.color='#8b5cf6';d.textContent='> '+cmd;box.appendChild(d);
     api('POST','/api/command',{command:cmd}).then(function(){
-        var d2 = document.createElement('div'); d2.className='con-line'; d2.style.color='#34d399'; d2.textContent='✓ Wysłano: '+cmd; box.appendChild(d2);
+        var d2=document.createElement('div');d2.className='con-line';d2.style.color='#34d399';d2.textContent='✓ Wysłano: '+cmd;box.appendChild(d2);
         box.scrollTop=box.scrollHeight;
     });
     document.getElementById('conIn').value='';
 });
-document.getElementById('conIn').addEventListener('keypress', function(e){ if(e.key==='Enter') document.getElementById('conExe').click(); });
-document.getElementById('clrCon').addEventListener('click', function(){
-    document.getElementById('conBox').innerHTML='<div class="con-line" style="color:#6b7280">Konsola wyczyszczona.</div>';
+document.getElementById('conIn').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('conExe').click()});
+document.getElementById('clrCon').addEventListener('click',function(){document.getElementById('conBox').innerHTML='<div class="con-line" style="color:#6b7280">Konsola wyczyszczona.</div>'});
+
+document.getElementById('sSave').addEventListener('click',function(){
+    api('POST','/api/server/settings',{name:document.getElementById('sName').value,maxPlayers:parseInt(document.getElementById('sMax').value)}).then(function(){loadLogs()});
 });
 
-// USTAWIENIA
-document.getElementById('sSave').addEventListener('click', function(){
-    api('POST','/api/server/settings',{name:document.getElementById('sName').value,maxPlayers:parseInt(document.getElementById('sMax').value)}).then(function(){ loadLogs(); });
-});
-
-// MODALE
-document.getElementById('kickYes').addEventListener('click', function(){
+document.getElementById('kickYes').addEventListener('click',function(){
     api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value||'Brak powodu',admin:adminName}).then(function(){
-        document.getElementById('kickModal').classList.remove('show');
-        loadP(); loadLogs();
+        document.getElementById('kickModal').classList.remove('show');loadP();loadLogs();
     });
 });
-document.getElementById('kickNo').addEventListener('click', function(){ document.getElementById('kickModal').classList.remove('show'); });
+document.getElementById('kickNo').addEventListener('click',function(){document.getElementById('kickModal').classList.remove('show')});
 
-document.getElementById('banYes').addEventListener('click', function(){
+document.getElementById('banYes').addEventListener('click',function(){
     api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value||'Brak powodu',duration:document.getElementById('banDur').value,admin:adminName}).then(function(){
-        document.getElementById('banModal').classList.remove('show');
-        loadP(); loadBans(); loadLogs();
+        document.getElementById('banModal').classList.remove('show');loadP();loadBans();loadLogs();
     });
 });
-document.getElementById('banNo').addEventListener('click', function(){ document.getElementById('banModal').classList.remove('show'); });
+document.getElementById('banNo').addEventListener('click',function(){document.getElementById('banModal').classList.remove('show')});
 
-document.getElementById('annYes').addEventListener('click', function(){
-    var msg = document.getElementById('annMsg').value.trim();
-    if (!msg) return;
-    api('POST','/api/announce',{message:msg}).then(function(){
-        document.getElementById('annModal').classList.remove('show');
-        document.getElementById('annMsg').value='';
-        loadLogs();
-    });
+document.getElementById('annYes').addEventListener('click',function(){
+    var msg=document.getElementById('annMsg').value.trim();if(!msg)return;
+    api('POST','/api/announce',{message:msg}).then(function(){document.getElementById('annModal').classList.remove('show');document.getElementById('annMsg').value='';loadLogs()});
 });
-document.getElementById('annNo').addEventListener('click', function(){ document.getElementById('annModal').classList.remove('show'); });
+document.getElementById('annNo').addEventListener('click',function(){document.getElementById('annModal').classList.remove('show')});
 
-// SOCKET
-socket.on('playerList', function(){ loadP(); });
-socket.on('serverStatus', function(s){ updateBadge(s.isOnline); });
-socket.on('uptimeUpdate', function(u){
-    var f=fUp(u);
-    document.getElementById('uptimeDisplay').textContent=f;
-    document.getElementById('statUptime').textContent=f;
-});
-socket.on('newLog', function(log){
-    var al=document.getElementById('allLogs'), dl=document.getElementById('dashLogs');
+socket.on('playerList',function(){loadP()});
+socket.on('serverStatus',function(s){updateBadge(s.isOnline)});
+socket.on('uptimeUpdate',function(u){var f=fUp(u);document.getElementById('uptimeDisplay').textContent=f;document.getElementById('statUptime').textContent=f});
+socket.on('newLog',function(log){
+    var al=document.getElementById('allLogs'),dl=document.getElementById('dashLogs');
     var entry=renderLog(log);
-    if(al){ if(al.querySelector('.empty'))al.innerHTML=''; al.insertAdjacentHTML('afterbegin',entry); }
-    if(dl){ if(dl.querySelector('.empty'))dl.innerHTML=''; dl.insertAdjacentHTML('afterbegin',entry); }
+    if(al){if(al.querySelector('.empty'))al.innerHTML='';al.insertAdjacentHTML('afterbegin',entry)}
+    if(dl){if(dl.querySelector('.empty'))dl.innerHTML='';dl.insertAdjacentHTML('afterbegin',entry)}
 });
 
-// START
-document.getElementById('logoutBtn').addEventListener('click', function(){
-    sessionStorage.clear();
-    window.location.href='/';
-});
+document.getElementById('logoutBtn').addEventListener('click',function(){sessionStorage.clear();window.location.href='/'});
 loadDash();
 </script>
 </body>
