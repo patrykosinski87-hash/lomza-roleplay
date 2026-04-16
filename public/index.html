@@ -7,45 +7,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100vh;display:flex;justify-content:center;align-items:center;background:radial-gradient(ellipse at 50% 0%,#1a0533 0%,#070711 60%)}
-.login-wrap{position:relative;width:440px}
-.login-glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,0.3) 0%,transparent 70%);pointer-events:none}
-.login-box{background:rgba(255,255,255,0.03);border:1px solid rgba(139,92,246,0.3);border-radius:24px;padding:48px 40px;text-align:center;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(139,92,246,0.15);position:relative}
-.login-logo{width:72px;height:72px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:20px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 32px rgba(139,92,246,0.4)}
-.login-title{font-size:26px;font-weight:800;margin-bottom:4px}
-.login-title span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.login-sub{color:#6b7280;font-size:14px;margin-bottom:32px}
-.login-label{text-align:left;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-.login-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(139,92,246,0.2);background:rgba(139,92,246,0.05);color:#fff;font-size:15px;margin-bottom:16px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif}
-.login-input:focus{border-color:#8b5cf6;background:rgba(139,92,246,0.1);box-shadow:0 0 0 3px rgba(139,92,246,0.15)}
-.login-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(139,92,246,0.4)}
-.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(139,92,246,0.5)}
-.error{color:#f87171;margin-top:14px;font-size:13px;font-weight:500;display:none;padding:10px;background:rgba(248,113,113,0.1);border-radius:8px}
+.wrap{position:relative;width:440px}
+.glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,0.3) 0%,transparent 70%);pointer-events:none}
+.box{background:rgba(255,255,255,0.03);border:1px solid rgba(139,92,246,0.3);border-radius:24px;padding:48px 40px;text-align:center;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(139,92,246,0.15);position:relative}
+.logo{width:72px;height:72px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:20px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 32px rgba(139,92,246,0.4)}
+.title{font-size:26px;font-weight:800;margin-bottom:4px}
+.title span{background:linear-gradient(90deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#6b7280;font-size:14px;margin-bottom:32px}
+.lbl{text-align:left;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.inp{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(139,92,246,0.2);background:rgba(139,92,246,0.05);color:#fff;font-size:15px;margin-bottom:16px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif}
+.inp:focus{border-color:#8b5cf6;background:rgba(139,92,246,0.1);box-shadow:0 0 0 3px rgba(139,92,246,0.15)}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(139,92,246,0.4)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(139,92,246,0.5)}
+.err{color:#f87171;margin-top:14px;font-size:13px;font-weight:500;display:none;padding:10px;background:rgba(248,113,113,0.1);border-radius:8px}
 </style>
 </head>
 <body>
-<div class="login-wrap">
-<div class="login-glow"></div>
-<div class="login-box">
-<div class="login-logo">🏙️</div>
-<div class="login-title"><span>Łomża Roleplay</span></div>
-<div class="login-sub">Panel Administratora</div>
-<div class="login-label">Login</div>
-<input class="login-input" type="text" id="loginInput" placeholder="Wpisz login...">
-<div class="login-label">Hasło</div>
-<input class="login-input" type="password" id="passwordInput" placeholder="Wpisz hasło...">
-<button class="login-btn" id="loginBtn">🔑 Zaloguj się</button>
-<div class="error" id="loginError">❌ Zły login lub hasło!</div>
+<div class="wrap">
+<div class="glow"></div>
+<div class="box">
+<div class="logo">🏙️</div>
+<div class="title"><span>Łomża Roleplay</span></div>
+<div class="sub">Panel Administracyjny</div>
+<div class="lbl">Login</div>
+<input class="inp" type="text" id="login" placeholder="Wpisz login...">
+<div class="lbl">Hasło</div>
+<input class="inp" type="password" id="pass" placeholder="Wpisz hasło...">
+<button class="btn" id="loginBtn">🔑 Zaloguj się</button>
+<div class="err" id="err">❌ Zły login lub hasło!</div>
 </div>
 </div>
 <script>
 function tryLogin() {
-    var login = document.getElementById('loginInput').value.trim();
-    var pw = document.getElementById('passwordInput').value;
-    if (!login || !pw) return;
+    var login = document.getElementById('login').value.trim();
+    var pass = document.getElementById('pass').value;
+    if (!login || !pass) return;
     fetch('/api/login', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({login: login, password: pw})
+        body: JSON.stringify({login: login, password: pass})
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -58,13 +58,13 @@ function tryLogin() {
                 window.location.href = '/mod.html';
             }
         } else {
-            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('err').style.display = 'block';
         }
     });
 }
 document.getElementById('loginBtn').addEventListener('click', tryLogin);
-document.getElementById('loginInput').addEventListener('keypress', function(e){ if(e.key==='Enter') document.getElementById('passwordInput').focus(); });
-document.getElementById('passwordInput').addEventListener('keypress', function(e){ if(e.key==='Enter') tryLogin(); });
+document.getElementById('login').addEventListener('keypress', function(e){ if(e.key==='Enter') document.getElementById('pass').focus(); });
+document.getElementById('pass').addEventListener('keypress', function(e){ if(e.key==='Enter') tryLogin(); });
 </script>
 </body>
 </html>
