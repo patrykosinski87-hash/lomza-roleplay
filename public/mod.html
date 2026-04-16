@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Łomża Roleplay — Moderator</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100vh}
+.topbar{background:rgba(10,10,20,0.95);border-bottom:1px solid rgba(59,130,246,0.2);padding:0 24px;height:64px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.topbar-brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-name{font-size:18px;font-weight:800}
+.brand-name span{background:linear-gradient(90deg,#3b82f6,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.name-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);color:#f472b6}
+.role-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd}
+.btn-logout{padding:8px 18px;border-radius:10px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.1);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-logout:hover{background:rgba(248,113,113,0.2)}
+.layout{display:flex;min-height:calc(100vh - 64px)}
+.sidebar{width:230px;background:rgba(10,10,20,0.8);border-right:1px solid rgba(59,130,246,0.1);padding:20px 12px;display:flex;flex-direction:column;gap:4px}
+.sidebar-section{font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 4px;margin-top:8px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;cursor:pointer;color:#6b7280;font-size:14px;font-weight:500;transition:all 0.2s;border:1px solid transparent}
+.sidebar-item:hover{background:rgba(59,130,246,0.08);color:#d1d5db}
+.sidebar-item.active{background:rgba(59,130,246,0.12);color:#93c5fd;border-color:rgba(59,130,246,0.2)}
+.sidebar-icon{font-size:18px;width:22px;text-align:center}
+.notif{margin-left:auto;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.main-content{flex:1;padding:28px;overflow-y:auto}
+.page{display:none}.page.active{display:block;animation:fu 0.3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:28px}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px}
+.page-title span{background:linear-gradient(90deg,#3b82f6,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.page-sub{color:#6b7280;font-size:14px}
+.card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:24px;margin-bottom:20px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.card-title-icon{width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:16px}
+.btn{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;font-family:'Inter',sans-serif}
+.btn:hover{transform:translateY(-1px)}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 12px rgba(16,185,129,0.3)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;box-shadow:0 4px 12px rgba(239,68,68,0.3)}
+.btn-warning{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;box-shadow:0 4px 12px rgba(245,158,11,0.3)}
+.btn-ghost{background:rgba(255,255,255,0.05);color:#9ca3af;border:1px solid rgba(255,255,255,0.08)}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.input{padding:11px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:14px;outline:none;transition:all 0.3s;font-family:'Inter',sans-serif;width:100%}
+.input:focus{border-color:rgba(59,130,246,0.5);background:rgba(59,130,246,0.05);box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
+.input-group{display:flex;gap:8px;margin-bottom:14px}
+.input-group .input{flex:1;width:auto}
+.form-label{font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.06)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06)}
+tbody td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(59,130,246,0.04)}
+.player-name{font-weight:700;color:#93c5fd}
+.player-id{color:#4b5563;font-family:monospace;font-size:12px}
+.hp-bar-wrap{display:flex;align-items:center;gap:8px}
+.hp-bar{width:70px;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.hp-fill{height:100%;border-radius:3px;transition:width 0.5s}
+.hp-text{font-size:13px;font-weight:600}
+.pos-badge{padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;background:rgba(59,130,246,0.1);color:#93c5fd;border:1px solid rgba(59,130,246,0.15)}
+.actions-cell{display:flex;gap:6px}
+.ban-card{display:flex;justify-content:space-between;align-items:center;padding:16px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-radius:12px;margin-bottom:10px}
+.ban-name{font-weight:700;color:#fca5a5;font-size:15px;margin-bottom:4px}
+.ban-info{color:#6b7280;font-size:13px}
+.empty{text-align:center;padding:50px 20px;color:#4b5563}
+.empty-icon{font-size:52px;margin-bottom:14px}
+.empty p{font-size:15px;font-weight:500}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal-box{background:#0f0f1a;border:1px solid rgba(59,130,246,0.2);border-radius:20px;padding:28px;width:440px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.modal-box h2{font-size:20px;font-weight:800;margin-bottom:20px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(59,130,246,0.3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<div class="topbar-brand"><div class="brand-icon">🏙️</div><div class="brand-name"><span>Łomża Roleplay</span></div></div>
+<div class="topbar-right">
+<div class="name-badge" id="nameBadge">👤</div>
+<div class="role-badge">🔧 Moderator</div>
+<button class="btn-logout" id="logoutBtn">🚪 Wyloguj</button>
+</div>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+<div class="sidebar-section">Panel Moderatora</div>
+<div class="sidebar-item active" data-page="players"><span class="sidebar-icon">👥</span> Gracze <span class="notif" id="playerNotif">0</span></div>
+<div class="sidebar-item" data-page="bans"><span class="sidebar-icon">🔨</span> Bany</div>
+</div>
+<div class="main-content">
+
+<div class="page active" id="page-players">
+<div class="page-header"><div class="page-title"><span>Gracze Online</span></div><div class="page-sub">Kickuj i banuj graczy</div></div>
+<div class="card">
+<div class="card-title"><div class="card-title-icon">👥</div> Gracze online — <span id="pCount" style="color:#93c5fd">0</span></div>
+<div class="table-wrap"><table><thead><tr><th>Gracz</th><th>ID</th><th>HP</th><th>Pozycja</th><th>Dołączył</th><th>Akcje</th></tr></thead><tbody id="pBody"></tbody></table></div>
+<div class="empty" id="noP"><div class="empty-icon">👥</div><p>Brak graczy online</p></div>
+</div>
+</div>
+
+<div class="page" id="page-bans">
+<div class="page-header"><div class="page-title"><span>Bany</span></div><div class="page-sub">Zarządzaj banami</div></div>
+<div class="card">
+<div class="card-title"><div class="card-title-icon">➕</div> Zbanuj gracza</div>
+<div class="form-label">Nick gracza</div>
+<div class="input-group"><input class="input" id="manualName" placeholder="Wpisz nick..."></div>
+<div class="form-label">Powód</div>
+<div class="input-group"><input class="input" id="manualReason" placeholder="Powód bana..."></div>
+<div class="form-label">Czas trwania</div>
+<div class="input-group"><select class="input" id="manualDur"><option value="1h">1 Godzina</option><option value="24h">24 Godziny</option><option value="7d">7 Dni</option><option value="30d">30 Dni</option><option value="perm">Permanentny</option></select></div>
+<button class="btn btn-danger" id="manualBanBtn">🔨 Zbanuj</button>
+</div>
+<div class="card">
+<div class="card-title"><div class="card-title-icon">🔨</div> Lista zbanowanych</div>
+<div id="banList"><div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="modal-bg" id="kickModal"><div class="modal-box"><h2>👢 Kick gracza</h2><input type="hidden" id="kickName"><div class="form-label">Powód</div><input class="input" id="kickReason" placeholder="Powód..."><div class="modal-footer"><button class="btn btn-ghost" id="kickNo">Anuluj</button><button class="btn btn-warning" id="kickYes">👢 Wyrzuć</button></div></div></div>
+<div class="modal-bg" id="banModal"><div class="modal-box"><h2>🔨 Zbanuj gracza</h2><input type="hidden" id="banName"><div class="form-label">Powód</div><input class="input" id="banReason" placeholder="Powód..." style="margin-bottom:14px"><div class="form-label">Czas</div><select class="input" id="banDur"><option value="1h">1 Godzina</option><option value="24h">24 Godziny</option><option value="7d">7 Dni</option><option value="30d">30 Dni</option><option value="perm">Permanentny</option></select><div class="modal-footer"><button class="btn btn-ghost" id="banNo">Anuluj</button><button class="btn btn-danger" id="banYes">🔨 Zbanuj</button></div></div></div>
+
+<script>
+// Sprawdz czy zalogowany jako mod
+var adminName = sessionStorage.getItem('adminName');
+var adminRole = sessionStorage.getItem('adminRole');
+if (!adminName || adminRole !== 'mod') {
+    window.location.href = '/';
+}
+document.getElementById('nameBadge').textContent = '👤 ' + adminName;
+
+var socket = io();
+
+function api(m, u, d) {
+    var o = {method:m, headers:{'Content-Type':'application/json'}};
+    if (d) o.body = JSON.stringify(d);
+    return fetch(u, o).then(function(r){ return r.json(); });
+}
+
+// NAWIGACJA
+document.querySelectorAll('.sidebar-item').forEach(function(item){
+    item.addEventListener('click', function(){
+        var page = this.getAttribute('data-page');
+        document.querySelectorAll('.sidebar-item').forEach(function(x){ x.classList.remove('active'); });
+        document.querySelectorAll('.page').forEach(function(x){ x.classList.remove('active'); });
+        this.classList.add('active');
+        document.getElementById('page-'+page).classList.add('active');
+        if(page==='bans') loadBans();
+        if(page==='players') loadP();
+    });
+});
+
+// GRACZE
+function loadP() {
+    api('GET','/api/players').then(function(list){
+        var tb = document.getElementById('pBody');
+        var no = document.getElementById('noP');
+        document.getElementById('pCount').textContent = list.length;
+        document.getElementById('playerNotif').textContent = list.length;
+        if (!list.length) { tb.innerHTML=''; no.style.display='block'; return; }
+        no.style.display='none';
+        var h='';
+        list.forEach(function(p){
+            var hc = p.health>60?'#10b981':p.health>30?'#f59e0b':'#ef4444';
+            h += '<tr><td><span class="player-name">'+p.name+'</span></td>';
+            h += '<td><span class="player-id">'+p.id+'</span></td>';
+            h += '<td><div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill" style="width:'+p.health+'%;background:'+hc+'"></div></div><span class="hp-text" style="color:'+hc+'">'+p.health+'%</span></div></td>';
+            h += '<td><span class="pos-badge">'+p.position+'</span></td>';
+            h += '<td style="color:#6b7280;font-size:13px">'+p.joinTime+'</td>';
+            h += '<td><div class="actions-cell"><button class="btn btn-warning btn-sm kb" data-n="'+p.name+'">👢 Kick</button><button class="btn btn-danger btn-sm bb" data-n="'+p.name+'">🔨 Ban</button></div></td></tr>';
+        });
+        tb.innerHTML = h;
+        document.querySelectorAll('.kb').forEach(function(b){
+            b.addEventListener('click', function(){
+                document.getElementById('kickName').value = this.getAttribute('data-n');
+                document.getElementById('kickReason').value = '';
+                document.getElementById('kickModal').classList.add('show');
+            });
+        });
+        document.querySelectorAll('.bb').forEach(function(b){
+            b.addEventListener('click', function(){
+                document.getElementById('banName').value = this.getAttribute('data-n');
+                document.getElementById('banReason').value = '';
+                document.getElementById('banModal').classList.add('show');
+            });
+        });
+    });
+}
+
+// BANY
+function durText(d){ return {perm:'Permanentny','1h':'1 Godzina','24h':'24 Godziny','7d':'7 Dni','30d':'30 Dni'}[d]||d; }
+function loadBans() {
+    api('GET','/api/bans').then(function(bans){
+        var c = document.getElementById('banList');
+        if (!bans.length) { c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>'; return; }
+        var h='';
+        bans.forEach(function(b){
+            h += '<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
+            h += '<div class="ban-info">Powód: '+b.reason+' • '+durText(b.duration)+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
+            h += '</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
+        });
+        c.innerHTML = h;
+        document.querySelectorAll('.ub').forEach(function(b){
+            b.addEventListener('click', function(){
+                api('POST','/api/players/unban',{name:this.getAttribute('data-n'),admin:adminName}).then(function(){ loadBans(); });
+            });
+        });
+    });
+}
+
+// RĘCZNY BAN
+document.getElementById('manualBanBtn').addEventListener('click', function(){
+    var name = document.getElementById('manualName').value.trim();
+    var reason = document.getElementById('manualReason').value.trim() || 'Brak powodu';
+    var dur = document.getElementById('manualDur').value;
+    if (!name) { alert('Wpisz nick!'); return; }
+    api('POST','/api/players/ban',{name:name,reason:reason,duration:dur,admin:adminName}).then(function(){
+        document.getElementById('manualName').value='';
+        document.getElementById('manualReason').value='';
+        loadBans(); loadP();
+    });
+});
+
+// MODALE
+document.getElementById('kickYes').addEventListener('click', function(){
+    api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value||'Brak powodu',admin:adminName}).then(function(){
+        document.getElementById('kickModal').classList.remove('show');
+        loadP();
+    });
+});
+document.getElementById('kickNo').addEventListener('click', function(){ document.getElementById('kickModal').classList.remove('show'); });
+
+document.getElementById('banYes').addEventListener('click', function(){
+    api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value||'Brak powodu',duration:document.getElementById('banDur').value,admin:adminName}).then(function(){
+        document.getElementById('banModal').classList.remove('show');
+        loadP(); loadBans();
+    });
+});
+document.getElementById('banNo').addEventListener('click', function(){ document.getElementById('banModal').classList.remove('show'); });
+
+// SOCKET
+socket.on('playerList', function(){ loadP(); });
+
+// WYLOGUJ
+document.getElementById('logoutBtn').addEventListener('click', function(){
+    sessionStorage.clear();
+    window.location.href='/';
+});
+
+// START
+loadP();
+</script>
+</body>
+</html>
