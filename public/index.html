@@ -38,6 +38,8 @@ body{font-family:'Inter',sans-serif;background:#070711;color:#fff;min-height:100
 @keyframes pd{0%,100%{opacity:1}50%{opacity:0.4}}
 .uptime-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;font-family:'Inter',monospace}
 .admin-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);color:#f472b6}
+.role-admin{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+.role-mod{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd}
 .btn-logout{padding:8px 18px;border-radius:10px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.1);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif}
 .btn-logout:hover{background:rgba(248,113,113,0.2)}
 .layout{display:flex;min-height:calc(100vh - 64px)}
@@ -121,6 +123,7 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 .modal-box{background:#0f0f1a;border:1px solid rgba(139,92,246,0.2);border-radius:20px;padding:28px;width:440px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:fu 0.3s ease}
 .modal-box h2{font-size:20px;font-weight:800;margin-bottom:20px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.hidden{display:none!important}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.3);border-radius:3px}
 </style>
 </head>
@@ -150,20 +153,21 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="server-badge badge-offline" id="serverBadge"><div class="badge-dot"></div><span id="serverBadgeText">OFFLINE</span></div>
 <div class="uptime-badge" id="uptimeDisplay">00:00:00</div>
 <div class="admin-badge" id="adminBadge">👤 Admin</div>
+<div class="admin-badge" id="roleBadge">Rola</div>
 <button class="btn-logout" id="logoutBtn">🚪 Wyloguj</button>
 </div>
 </div>
 <div class="layout">
 <div class="sidebar">
-<div class="sidebar-section">Główne</div>
-<div class="sidebar-item active" data-page="dashboard"><span class="sidebar-icon">📊</span> Dashboard</div>
-<div class="sidebar-item" data-page="players"><span class="sidebar-icon">👥</span> Gracze <span class="notif" id="playerNotif">0</span></div>
-<div class="sidebar-section">Narzędzia</div>
-<div class="sidebar-item" data-page="console"><span class="sidebar-icon">💻</span> Konsola</div>
+<div class="sidebar-section admin-only">Główne</div>
+<div class="sidebar-item active admin-only" data-page="dashboard"><span class="sidebar-icon">📊</span> Dashboard</div>
+<div class="sidebar-item admin-only" data-page="players"><span class="sidebar-icon">👥</span> Gracze <span class="notif" id="playerNotif">0</span></div>
+<div class="sidebar-section admin-only">Narzędzia</div>
+<div class="sidebar-item admin-only" data-page="console"><span class="sidebar-icon">💻</span> Konsola</div>
 <div class="sidebar-item" data-page="bans"><span class="sidebar-icon">🔨</span> Bany</div>
-<div class="sidebar-section">System</div>
-<div class="sidebar-item" data-page="logs"><span class="sidebar-icon">📜</span> Logi</div>
-<div class="sidebar-item" data-page="settings"><span class="sidebar-icon">⚙️</span> Ustawienia</div>
+<div class="sidebar-section admin-only">System</div>
+<div class="sidebar-item admin-only" data-page="logs"><span class="sidebar-icon">📜</span> Logi</div>
+<div class="sidebar-item admin-only" data-page="settings"><span class="sidebar-icon">⚙️</span> Ustawienia</div>
 </div>
 <div class="main-content">
 
@@ -209,6 +213,27 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 
 <div class="page" id="page-bans">
 <div class="page-header"><div class="page-title"><span>Bany</span></div><div class="page-sub">Lista zbanowanych graczy</div></div>
+
+<!-- Formularz recznego bana -->
+<div class="card" id="manualBanCard">
+<div class="card-title"><div class="card-title-icon">➕</div> Zbanuj gracza ręcznie</div>
+<div class="form-label">Nick gracza</div>
+<div class="input-group"><input class="input" id="manualBanName" placeholder="Wpisz nick gracza..."></div>
+<div class="form-label">Powód</div>
+<div class="input-group"><input class="input" id="manualBanReason" placeholder="Powód bana..."></div>
+<div class="form-label">Czas trwania</div>
+<div class="input-group">
+<select class="input" id="manualBanDur">
+<option value="1h">1 Godzina</option>
+<option value="24h">24 Godziny</option>
+<option value="7d">7 Dni</option>
+<option value="30d">30 Dni</option>
+<option value="perm">Permanentny</option>
+</select>
+</div>
+<button class="btn btn-danger" id="manualBanBtn">🔨 Zbanuj</button>
+</div>
+
 <div class="card"><div class="card-title"><div class="card-title-icon">🔨</div> Zbanowani</div><div id="banList"><div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div></div></div>
 </div>
 
@@ -240,23 +265,73 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="modal-bg" id="annModal"><div class="modal-box"><h2>📢 Ogłoszenie</h2><div class="form-label">Treść</div><input class="input" id="annMsg" placeholder="Treść ogłoszenia..." style="width:100%"><div class="modal-footer"><button class="btn btn-ghost" id="annNo">Anuluj</button><button class="btn btn-success" id="annYes">📢 Wyślij</button></div></div></div>
 
 <script>
-var socket=io(),adminName='Admin';
+var socket=io(),adminName='Admin',adminRole='admin';
 function api(m,u,d){var o={method:m,headers:{'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);return fetch(u,o).then(function(r){return r.json()})}
 function fUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec}
 
+// ============================================
+// LOGOWANIE + ROLE
+// ============================================
 document.getElementById('loginBtn').addEventListener('click',function(){
     var login=document.getElementById('loginInput').value;
     var pw=document.getElementById('passwordInput').value;
     api('POST','/api/login',{login:login,password:pw}).then(function(d){
         if(d.success){
             adminName=d.login;
+            adminRole=d.role;
             document.getElementById('loginScreen').style.display='none';
             document.getElementById('panel').style.display='block';
             document.getElementById('adminBadge').textContent='👤 '+adminName;
-            loadDash();
+
+            // Ustawienie badge roli
+            var roleBadge=document.getElementById('roleBadge');
+            if(adminRole==='admin'){
+                roleBadge.textContent='🛡️ Administrator';
+                roleBadge.className='admin-badge role-admin';
+            } else {
+                roleBadge.textContent='🔧 Moderator';
+                roleBadge.className='admin-badge role-mod';
+            }
+
+            applyRole();
+
+            if(adminRole==='admin'){
+                loadDash();
+            } else {
+                // Mod — od razu na stronę banów
+                goTo('bans');
+                loadBans();
+            }
         }else{document.getElementById('loginError').style.display='block'}
     });
 });
+
+function applyRole(){
+    // Ukryj/pokaż elementy według roli
+    var adminItems = document.querySelectorAll('.admin-only');
+    if(adminRole==='mod'){
+        // Ukryj wszystko co admin-only
+        for(var i=0;i<adminItems.length;i++){
+            adminItems[i].classList.add('hidden');
+        }
+        // Ukryj strony, które mod nie powinien widzieć
+        // Mod widzi tylko page-bans
+        // Ustaw bans jako aktywny
+        document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+        document.getElementById('page-bans').classList.add('active');
+
+        // Ustaw sidebar bans jako aktywny
+        document.querySelectorAll('.sidebar-item').forEach(function(s){s.classList.remove('active')});
+        var bansSidebar = document.querySelector('[data-page="bans"]');
+        if(bansSidebar) bansSidebar.classList.add('active');
+    } else {
+        // Admin — pokaż wszystko
+        for(var i=0;i<adminItems.length;i++){
+            adminItems[i].classList.remove('hidden');
+        }
+    }
+}
+
 document.getElementById('loginInput').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('passwordInput').focus()});
 document.getElementById('passwordInput').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
 document.getElementById('logoutBtn').addEventListener('click',function(){
@@ -265,11 +340,17 @@ document.getElementById('logoutBtn').addEventListener('click',function(){
     document.getElementById('loginInput').value='';
     document.getElementById('passwordInput').value='';
     document.getElementById('loginError').style.display='none';
+    adminRole='admin';
+    adminName='Admin';
 });
 
 document.querySelectorAll('.sidebar-item').forEach(function(i){
     i.addEventListener('click',function(){
         var p=this.getAttribute('data-page');
+        if(!p) return;
+        // Mod nie może przejść do stron admin-only
+        if(adminRole==='mod' && this.classList.contains('admin-only')) return;
+
         document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
         document.querySelectorAll('.sidebar-item').forEach(function(x){x.classList.remove('active')});
         document.getElementById('page-'+p).classList.add('active');
@@ -277,7 +358,10 @@ document.querySelectorAll('.sidebar-item').forEach(function(i){
         if(p==='bans')loadBans();if(p==='logs')loadLogs();if(p==='players')loadP();
     });
 });
-function goTo(p){document.querySelector('[data-page="'+p+'"]').click()}
+function goTo(p){
+    var item=document.querySelector('[data-page="'+p+'"]');
+    if(item) item.click();
+}
 
 function loadDash(){
     api('GET','/api/status').then(function(d){
@@ -291,27 +375,27 @@ function updateBadge(on){
     var b=document.getElementById('serverBadge');
     b.className='server-badge '+(on?'badge-online':'badge-offline');
     document.getElementById('serverBadgeText').textContent=on?'ONLINE':'OFFLINE';
-    document.getElementById('statStatus').textContent=on?'ONLINE':'OFFLINE';
-    document.getElementById('statStatus').style.color=on?'#34d399':'#f87171';
-    document.getElementById('qaIcon').textContent=on?'🔴':'🟢';
-    document.getElementById('qaText').textContent=on?'Wyłącz Serwer':'Włącz Serwer';
+    var ss=document.getElementById('statStatus');
+    if(ss){ss.textContent=on?'ONLINE':'OFFLINE';ss.style.color=on?'#34d399':'#f87171';}
+    var qi=document.getElementById('qaIcon');if(qi)qi.textContent=on?'🔴':'🟢';
+    var qt=document.getElementById('qaText');if(qt)qt.textContent=on?'Wyłącz Serwer':'Włącz Serwer';
 }
 
-document.getElementById('qaToggle').addEventListener('click',function(){api('POST','/api/server/toggle').then(function(d){updateBadge(d.isOnline)})});
-document.getElementById('qaAdd').addEventListener('click',addTP);
-document.getElementById('addPBtn').addEventListener('click',addTP);
-document.getElementById('qaAnn').addEventListener('click',function(){document.getElementById('annModal').classList.add('show')});
-document.getElementById('qaCon').addEventListener('click',function(){goTo('console')});
-document.getElementById('qaPla').addEventListener('click',function(){goTo('players')});
-document.getElementById('qaClr').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
+document.getElementById('qaToggle').addEventListener('click',function(){if(adminRole==='mod')return;api('POST','/api/server/toggle').then(function(d){updateBadge(d.isOnline)})});
+document.getElementById('qaAdd').addEventListener('click',function(){if(adminRole==='mod')return;addTP()});
+document.getElementById('addPBtn').addEventListener('click',function(){if(adminRole==='mod')return;addTP()});
+document.getElementById('qaAnn').addEventListener('click',function(){if(adminRole==='mod')return;document.getElementById('annModal').classList.add('show')});
+document.getElementById('qaCon').addEventListener('click',function(){if(adminRole==='mod')return;goTo('console')});
+document.getElementById('qaPla').addEventListener('click',function(){if(adminRole==='mod')return;goTo('players')});
+document.getElementById('qaClr').addEventListener('click',function(){if(adminRole==='mod')return;api('POST','/api/logs/clear').then(function(){loadLogs()})});
 function addTP(){api('POST','/api/test/addplayers').then(function(){loadP()})}
 
 function loadP(){api('GET','/api/players').then(function(p){renderP(p)})}
 function renderP(list){
     var tb=document.getElementById('pBody'),no=document.getElementById('noP');
-    document.getElementById('pCount').textContent=list.length;
-    document.getElementById('statPlayers').textContent=list.length;
-    document.getElementById('playerNotif').textContent=list.length;
+    var pc=document.getElementById('pCount');if(pc)pc.textContent=list.length;
+    var sp=document.getElementById('statPlayers');if(sp)sp.textContent=list.length;
+    var pn=document.getElementById('playerNotif');if(pn)pn.textContent=list.length;
     if(!list.length){tb.innerHTML='';no.style.display='block';return}
     no.style.display='none';
     var h='';
@@ -336,15 +420,163 @@ document.getElementById('kickNo').addEventListener('click',function(){document.g
 
 document.getElementById('banYes').addEventListener('click',function(){
     api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value,duration:document.getElementById('banDur').value,admin:adminName}).then(function(){
-        document.getElementById('banModal').classList.remove('show');document.getElementById('banReason').value='';loadP();loadLogs();
+        document.getElementById('banModal').classList.remove('show');document.getElementById('banReason').value='';loadP();loadLogs();loadBans();
     });
 });
 document.getElementById('banNo').addEventListener('click',function(){document.getElementById('banModal').classList.remove('show')});
 
+// ============================================
+// RĘCZNY BAN (z zakładki Bany)
+// ============================================
+document.getElementById('manualBanBtn').addEventListener('click',function(){
+    var name=document.getElementById('manualBanName').value.trim();
+    var reason=document.getElementById('manualBanReason').value.trim();
+    var duration=document.getElementById('manualBanDur').value;
+    if(!name){alert('Wpisz nick gracza!');return}
+    if(!reason) reason='Brak powodu';
+    api('POST','/api/players/ban',{name:name,reason:reason,duration:duration,admin:adminName}).then(function(){
+        document.getElementById('manualBanName').value='';
+        document.getElementById('manualBanReason').value='';
+        loadBans();
+        if(adminRole==='admin') loadP();
+    });
+});
+
+// ============================================
+// BANY — LISTA
+// ============================================
 function loadBans(){
     api('GET','/api/bans').then(function(bans){
         var c=document.getElementById('banList');
+        var sb=document.getElementById('statBans');if(sb)sb.textContent=bans.length;
         if(!bans.length){c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>';return}
         var h='';
         bans.forEach(function(b){
-            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div><div class="ban-info">Powód: '+b.reason+' • '+b.duration+' • Admin: 
+            var durText=b.duration;
+            if(b.duration==='1h')durText='1 Godzina';
+            else if(b.duration==='24h')durText='24 Godziny';
+            else if(b.duration==='7d')durText='7 Dni';
+            else if(b.duration==='30d')durText='30 Dni';
+            else if(b.duration==='perm')durText='Permanentny';
+
+            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div>';
+            h+='<div class="ban-info">Powód: '+b.reason+' • '+durText+' • Zbanował: <strong>'+b.admin+'</strong> • '+b.time+'</div>';
+            h+='</div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
+        });
+        c.innerHTML=h;
+        document.querySelectorAll('.ub').forEach(function(b){
+            b.addEventListener('click',function(){
+                var n=this.getAttribute('data-n');
+                api('POST','/api/players/unban',{name:n,admin:adminName}).then(function(){loadBans()});
+            });
+        });
+    });
+}
+
+// ============================================
+// LOGI
+// ============================================
+function renderLog(log){
+    return '<div class="log-item log-'+log.type+'"><span class="log-msg">'+log.message+'</span><span class="log-time">'+log.time+'</span></div>';
+}
+function loadLogs(){
+    api('GET','/api/logs').then(function(l){
+        var dl=document.getElementById('dashLogs'),al=document.getElementById('allLogs');
+        if(!l.length){
+            if(dl)dl.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';
+            if(al)al.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';
+            return;
+        }
+        var h='';l.forEach(function(x){h+=renderLog(x)});
+        if(al)al.innerHTML=h;
+        var dh='';l.slice(0,15).forEach(function(x){dh+=renderLog(x)});
+        if(dl)dl.innerHTML=dh;
+    });
+}
+socket.on('newLog',function(log){
+    if(adminRole==='mod') return; // Mod nie potrzebuje logów na żywo
+    var dl=document.getElementById('dashLogs'),al=document.getElementById('allLogs');
+    var entry=renderLog(log);
+    if(dl){
+        if(dl.querySelector('.empty'))dl.innerHTML='';
+        dl.insertAdjacentHTML('afterbegin',entry);
+    }
+    if(al){
+        if(al.querySelector('.empty'))al.innerHTML='';
+        al.insertAdjacentHTML('afterbegin',entry);
+    }
+});
+
+socket.on('playerList',function(p){
+    if(adminRole==='admin') renderP(p);
+});
+socket.on('serverStatus',function(s){
+    if(adminRole==='admin') updateBadge(s.isOnline);
+});
+socket.on('uptimeUpdate',function(u){
+    var f=fUp(u);
+    var ud=document.getElementById('uptimeDisplay');if(ud)ud.textContent=f;
+    var su=document.getElementById('statUptime');if(su)su.textContent=f;
+});
+
+document.getElementById('clrLogs').addEventListener('click',function(){
+    if(adminRole==='mod')return;
+    api('POST','/api/logs/clear').then(function(){loadLogs()});
+});
+
+// ============================================
+// KONSOLA
+// ============================================
+function conAdd(text,color){
+    var box=document.getElementById('conBox');
+    var div=document.createElement('div');
+    div.className='con-line';
+    div.style.color=color||'#d1d5db';
+    div.textContent=text;
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+}
+function qCmd(c){document.getElementById('conIn').value=c;document.getElementById('conExe').click()}
+document.getElementById('conExe').addEventListener('click',function(){
+    if(adminRole==='mod')return;
+    var cmd=document.getElementById('conIn').value.trim();
+    if(!cmd)return;
+    conAdd('> '+cmd,'#8b5cf6');
+    api('POST','/api/command',{command:cmd}).then(function(){
+        conAdd('✓ Komenda wysłana: '+cmd,'#34d399');
+    });
+    document.getElementById('conIn').value='';
+});
+document.getElementById('conIn').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('conExe').click()});
+document.getElementById('clrCon').addEventListener('click',function(){
+    document.getElementById('conBox').innerHTML='<div class="con-line" style="color:#6b7280">Konsola wyczyszczona.</div>';
+});
+
+// ============================================
+// OGŁOSZENIE
+// ============================================
+document.getElementById('annYes').addEventListener('click',function(){
+    var msg=document.getElementById('annMsg').value.trim();
+    if(!msg)return;
+    api('POST','/api/announce',{message:msg}).then(function(){
+        document.getElementById('annModal').classList.remove('show');
+        document.getElementById('annMsg').value='';
+        if(adminRole==='admin')loadLogs();
+    });
+});
+document.getElementById('annNo').addEventListener('click',function(){document.getElementById('annModal').classList.remove('show')});
+
+// ============================================
+// USTAWIENIA
+// ============================================
+document.getElementById('sSave').addEventListener('click',function(){
+    if(adminRole==='mod')return;
+    var name=document.getElementById('sName').value;
+    var max=parseInt(document.getElementById('sMax').value);
+    api('POST','/api/server/settings',{name:name,maxPlayers:max}).then(function(){
+        if(adminRole==='admin')loadLogs();
+    });
+});
+</script>
+</body>
+</html>
