@@ -8,16 +8,19 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// ============================================
-// WKLEJ TUTAJ SWOJ WEBHOOK URL Z DISCORDA!
-// ============================================
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1494374094857306313/tXlKfOg1skeQX3yaLSeOGBHJs6FQS-II_tFbRptcBnsoN1PsB8gtf3RWRrnv28P2WTz8";
-// ============================================
 
+// ============================================
+// KONTA — role: 'admin' = pełny dostęp, 'mod' = tylko bany/unbany
+// ============================================
 var ADMINS = [
-    { login: 'VsXe', password: 'admin123' },
-    { login: 'WeXiO', password: 'admin123' },
-    { login: 'WiSnNiA', password: 'admin123' }
+    { login: 'VsXe', password: 'admin123', role: 'admin' },
+    { login: 'WeXiO', password: 'admin123', role: 'admin' },
+    { login: 'WiSnNiA', password: 'admin123', role: 'admin' },
+    { login: 'zvujsyy', password: 'admin123', role: 'mod' },
+    { login: 'k1ngvss', password: 'admin123', role: 'mod' },
+    { login: 'kebsioow_tortilli', password: 'admin123', role: 'mod' },
+    { login: 'patryk03413', password: 'admin123', role: 'mod' }
 ];
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -30,7 +33,7 @@ var bannedPlayers = [];
 var commandQueue = [];
 
 // ============================================
-// DISCORD — TYLKO BANY (PROFESJONALNE)
+// DISCORD — BANY
 // ============================================
 function sendDiscordBan(data) {
     var https = require('https');
@@ -63,7 +66,7 @@ function sendDiscordBan(data) {
                     },
                     {
                         name: "👮 Zbanowany przez",
-                        value: "```yml\n" + (data.admin || 'Panel') + "\n```",
+                        value: "```yml\n" + data.admin + "\n```",
                         inline: true
                     },
                     {
@@ -158,16 +161,16 @@ function addLog(type, message) {
 app.post('/api/login', function(req, res) {
     var login = req.body.login;
     var password = req.body.password;
-    var found = false;
+    var foundUser = null;
     for (var i = 0; i < ADMINS.length; i++) {
         if (ADMINS[i].login === login && ADMINS[i].password === password) {
-            found = true;
+            foundUser = ADMINS[i];
             break;
         }
     }
-    if (found) {
-        addLog('info', '🔑 ' + login + ' zalogowal sie do panelu');
-        return res.json({ success: true, login: login });
+    if (foundUser) {
+        addLog('info', '🔑 ' + login + ' zalogowal sie do panelu (' + foundUser.role + ')');
+        return res.json({ success: true, login: foundUser.login, role: foundUser.role });
     }
     return res.json({ success: false });
 });
@@ -195,9 +198,10 @@ app.get('/api/players', function(req, res) { res.json(players); });
 app.post('/api/players/kick', function(req, res) {
     var name = req.body.name;
     var reason = req.body.reason || 'Brak powodu';
+    var admin = req.body.admin || 'Panel';
     players = players.filter(function(p) { return p.name !== name; });
     commandQueue.push({ type: 'kick', target: name, reason: reason, time: Date.now() });
-    addLog('kick', '👢 ' + name + ' wyrzucony. Powod: ' + reason);
+    addLog('kick', '👢 ' + name + ' wyrzucony przez ' + admin + '. Powod: ' + reason);
     io.emit('playerList', players);
     res.json({ success: true });
 });
@@ -241,8 +245,9 @@ app.post('/api/players/ban', function(req, res) {
 
 app.post('/api/players/unban', function(req, res) {
     var name = req.body.name;
+    var admin = req.body.admin || 'Panel';
     bannedPlayers = bannedPlayers.filter(function(b) { return b.name !== name; });
-    addLog('info', '✅ ' + name + ' odbanowany');
+    addLog('info', '✅ ' + name + ' odbanowany przez ' + admin);
     res.json({ success: true });
 });
 
@@ -396,7 +401,8 @@ server.listen(PORT, function() {
     console.log('========================================');
     console.log('  LOMZA ROLEPLAY — ADMIN PANEL');
     console.log('  Panel: http://localhost:' + PORT);
-    console.log('  Loginy: VsXe, WeXiO, WiSnNiA');
+    console.log('  Admini: VsXe, WeXiO, WiSnNiA');
+    console.log('  Moderatorzy: zvujsyy, k1ngvss, kebsioow_tortilli, patryk03413');
     console.log('  Haslo: admin123');
     console.log('  Discord Bany: ' + (DISCORD_WEBHOOK.indexOf('TUTAJ') === -1 ? 'PODLACZONY' : 'NIE PODLACZONY'));
     console.log('========================================');
