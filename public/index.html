@@ -224,13 +224,12 @@ tbody tr:hover td{background:rgba(139,92,246,0.04)}
 <div class="form-label">Max Graczy</div><div class="input-group"><input class="input" id="sMax" type="number" placeholder="50"></div>
 <button class="btn btn-primary" id="sSave">💾 Zapisz</button></div>
 <div class="card"><div class="card-title"><div class="card-title-icon">🔌</div> Roblox API</div>
-<p style="color:#6b7280;font-size:13px;margin-bottom:12px">Endpointy do HttpService w grze Roblox:</p>
+<p style="color:#6b7280;font-size:13px;margin-bottom:12px">Endpointy do HttpService:</p>
 <div style="background:#000;border-radius:10px;padding:16px;font-family:Consolas,monospace;font-size:13px;color:#a78bfa">
 <div>POST /api/roblox/join   — gracz dołącza</div>
 <div>POST /api/roblox/leave  — gracz wychodzi</div>
-<div>POST /api/roblox/update — aktualizuj HP/pozycję</div>
+<div>POST /api/roblox/update — aktualizuj HP</div>
 <div>GET  /api/roblox/commands — pobierz komendy</div>
-<div>GET  /api/roblox/checkban — sprawdź ban</div>
 </div></div>
 </div>
 
@@ -245,7 +244,6 @@ var socket=io(),adminName='Admin';
 function api(m,u,d){var o={method:m,headers:{'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);return fetch(u,o).then(function(r){return r.json()})}
 function fUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec}
 
-// LOGIN
 document.getElementById('loginBtn').addEventListener('click',function(){
     var login=document.getElementById('loginInput').value;
     var pw=document.getElementById('passwordInput').value;
@@ -269,7 +267,6 @@ document.getElementById('logoutBtn').addEventListener('click',function(){
     document.getElementById('loginError').style.display='none';
 });
 
-// NAV
 document.querySelectorAll('.sidebar-item').forEach(function(i){
     i.addEventListener('click',function(){
         var p=this.getAttribute('data-page');
@@ -282,7 +279,6 @@ document.querySelectorAll('.sidebar-item').forEach(function(i){
 });
 function goTo(p){document.querySelector('[data-page="'+p+'"]').click()}
 
-// DASHBOARD
 function loadDash(){
     api('GET','/api/status').then(function(d){
         document.getElementById('statPlayers').textContent=d.playerCount;
@@ -301,7 +297,6 @@ function updateBadge(on){
     document.getElementById('qaText').textContent=on?'Wyłącz Serwer':'Włącz Serwer';
 }
 
-// QUICK
 document.getElementById('qaToggle').addEventListener('click',function(){api('POST','/api/server/toggle').then(function(d){updateBadge(d.isOnline)})});
 document.getElementById('qaAdd').addEventListener('click',addTP);
 document.getElementById('addPBtn').addEventListener('click',addTP);
@@ -311,7 +306,6 @@ document.getElementById('qaPla').addEventListener('click',function(){goTo('playe
 document.getElementById('qaClr').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
 function addTP(){api('POST','/api/test/addplayers').then(function(){loadP()})}
 
-// PLAYERS
 function loadP(){api('GET','/api/players').then(function(p){renderP(p)})}
 function renderP(list){
     var tb=document.getElementById('pBody'),no=document.getElementById('noP');
@@ -333,79 +327,24 @@ function renderP(list){
     document.querySelectorAll('.bb').forEach(function(b){b.addEventListener('click',function(){document.getElementById('banName').value=this.getAttribute('data-n');document.getElementById('banModal').classList.add('show')})});
 }
 
-// KICK
 document.getElementById('kickYes').addEventListener('click',function(){
-    api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value}).then(function(){
+    api('POST','/api/players/kick',{name:document.getElementById('kickName').value,reason:document.getElementById('kickReason').value,admin:adminName}).then(function(){
         document.getElementById('kickModal').classList.remove('show');document.getElementById('kickReason').value='';loadP();loadLogs();
     });
 });
 document.getElementById('kickNo').addEventListener('click',function(){document.getElementById('kickModal').classList.remove('show')});
 
-// BAN
 document.getElementById('banYes').addEventListener('click',function(){
-    api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value,duration:document.getElementById('banDur').value}).then(function(){
+    api('POST','/api/players/ban',{name:document.getElementById('banName').value,reason:document.getElementById('banReason').value,duration:document.getElementById('banDur').value,admin:adminName}).then(function(){
         document.getElementById('banModal').classList.remove('show');document.getElementById('banReason').value='';loadP();loadLogs();
     });
 });
 document.getElementById('banNo').addEventListener('click',function(){document.getElementById('banModal').classList.remove('show')});
 
-// BANS
 function loadBans(){
     api('GET','/api/bans').then(function(bans){
         var c=document.getElementById('banList');
         if(!bans.length){c.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Brak zbanowanych</p></div>';return}
         var h='';
         bans.forEach(function(b){
-            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div><div class="ban-info">Powód: '+b.reason+' • '+b.duration+' • '+b.time+'</div></div><button class="btn btn-success btn-sm ub" data-n="'+b.name+'">✅ Odbanuj</button></div>';
-        });
-        c.innerHTML=h;
-        document.querySelectorAll('.ub').forEach(function(b){b.addEventListener('click',function(){api('POST','/api/players/unban',{name:this.getAttribute('data-n')}).then(function(){loadBans()})})});
-    });
-}
-
-// LOGS
-function loadLogs(){api('GET','/api/logs').then(function(l){rLogs('dashLogs',l,8);rLogs('allLogs',l)})}
-function rLogs(id,logs,lim){
-    var c=document.getElementById(id),a=lim?logs.slice(0,lim):logs;
-    if(!a.length){c.innerHTML='<div class="empty"><div class="empty-icon">📜</div><p>Brak logów</p></div>';return}
-    var h='';a.forEach(function(l){h+='<div class="log-item log-'+l.type+'"><span class="log-msg">'+l.message+'</span><span class="log-time">'+l.time+'</span></div>'});
-    c.innerHTML=h;
-}
-document.getElementById('clrLogs').addEventListener('click',function(){api('POST','/api/logs/clear').then(function(){loadLogs()})});
-
-// CONSOLE
-document.getElementById('conExe').addEventListener('click',exCmd);
-document.getElementById('conIn').addEventListener('keypress',function(e){if(e.key==='Enter')exCmd()});
-function exCmd(){
-    var inp=document.getElementById('conIn'),cmd=inp.value.trim();if(!cmd)return;
-    addCon(adminName+'@lomza:~$ '+cmd,'#a78bfa');
-    api('POST','/api/command',{command:cmd}).then(function(){addCon('✓ Wykonano: '+cmd,'#34d399');loadLogs()});
-    inp.value='';
-}
-function qCmd(c){document.getElementById('conIn').value=c;exCmd()}
-function addCon(t,c){var b=document.getElementById('conBox'),l=document.createElement('div');l.className='con-line';l.style.color=c||'#fff';l.textContent=t;b.appendChild(l);b.scrollTop=b.scrollHeight}
-document.getElementById('clrCon').addEventListener('click',function(){document.getElementById('conBox').innerHTML='<div class="con-line" style="color:#8b5cf6">Konsola wyczyszczona.</div>'});
-
-// ANNOUNCE
-document.getElementById('annYes').addEventListener('click',function(){
-    var msg=document.getElementById('annMsg').value;if(!msg)return;
-    api('POST','/api/announce',{message:msg}).then(function(){
-        document.getElementById('annModal').classList.remove('show');document.getElementById('annMsg').value='';
-        addCon('📢 OGŁOSZENIE: '+msg,'#eab308');loadLogs();
-    });
-});
-document.getElementById('annNo').addEventListener('click',function(){document.getElementById('annModal').classList.remove('show')});
-
-// SETTINGS
-document.getElementById('sSave').addEventListener('click',function(){
-    api('POST','/api/server/settings',{name:document.getElementById('sName').value,maxPlayers:parseInt(document.getElementById('sMax').value)}).then(function(){alert('✅ Zapisano!')});
-});
-
-// SOCKET
-socket.on('playerList',function(p){renderP(p)});
-socket.on('newLog',function(){loadLogs()});
-socket.on('serverStatus',function(s){updateBadge(s.isOnline)});
-socket.on('uptimeUpdate',function(u){var t=fUp(u);document.getElementById('uptimeDisplay').textContent=t;document.getElementById('statUptime').textContent=t});
-</script>
-</body>
-</html>
+            h+='<div class="ban-card"><div><div class="ban-name">🔨 '+b.name+'</div><div class="ban-info">Powód: '+b.reason+' • '+b.duration+' • Admin: 
